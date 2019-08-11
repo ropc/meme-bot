@@ -5,6 +5,7 @@ import uuid
 import discord
 import textwrap
 import memes
+from typing import Dict
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
@@ -12,10 +13,9 @@ from PIL import ImageDraw
 
 client = discord.Client()
 
-
-meme_generators = {
-    'spongebob': memes.spongebob.meme_generator,
-    'change-my-mind': memes.change_my_mind.meme_generator
+meme_generators: Dict[str, memes.BaseMeme] = {
+    'spongebob': memes.SpongeBob(),
+    'change-my-mind': memes.ChangeMyMind()
 }
 
 
@@ -46,7 +46,7 @@ async def respond_to_message(message: discord.Message):
 
         meme_name, meme_text = parsed_message
 
-        meme_generator = meme_generators.get(meme_name)
+        meme_generator: memes.BaseMeme = meme_generators.get(meme_name)
         if meme_generator is None:
             print('idk message')
             return await send_failure(message.channel)
@@ -54,8 +54,8 @@ async def respond_to_message(message: discord.Message):
         return await handle_meme(meme_text, meme_generator, message.channel)
 
 
-async def handle_meme(meme_text, meme_generator, channel: discord.TextChannel):
-    meme_image_path = meme_generator(meme_text)
+async def handle_meme(meme_text, meme_generator: memes.BaseMeme, channel: discord.TextChannel):
+    meme_image_path = meme_generator.generate(meme_text)
 
     with open(meme_image_path, 'rb') as f:
         await channel.send(file=discord.File(f))
