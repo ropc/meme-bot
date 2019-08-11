@@ -73,8 +73,17 @@ async def send_spongebob_meme(meme_text: str, channel: discord.TextChannel):
 
         img_x, img_y = img.size
         textsize_x, textsize_y = draw.textsize(meme_text, font=font)
-        position = ((img_x - textsize_x) / 2, img.size[1] * 2 /3)
+        position = ((img_x - textsize_x) / 2, (img.size[1] * 0.95) - textsize_y)
+
+        shadowcolor = 'black'
+        x, y = position
+        draw.multiline_text((x-1, y-1), meme_text, font=font, fill=shadowcolor, align='center', spacing=4)
+        draw.multiline_text((x+1, y-1), meme_text, font=font, fill=shadowcolor, align='center', spacing=4)
+        draw.multiline_text((x-1, y+1), meme_text, font=font, fill=shadowcolor, align='center', spacing=4)
+        draw.multiline_text((x+1, y+1), meme_text, font=font, fill=shadowcolor, align='center', spacing=4)
+
         draw.multiline_text(position, meme_text, font=font, align='center', spacing=4)
+
         img.save(meme_image_path, format='JPEG')
 
     with open(meme_image_path, 'rb') as f:
