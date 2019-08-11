@@ -16,7 +16,7 @@ module_path = os.path.dirname(os.path.abspath(__file__))
 package_root_dir = str(Path(module_path).parents[1])
 
 
-def spogebob_meme(meme_text) -> str:
+def meme_generator(meme_text) -> str:
     meme_image_path = f'spongebob-{uuid.uuid4()}.jpg'
     meme_text = textwrap.fill(spongify_text(meme_text), 20)
     
