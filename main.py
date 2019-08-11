@@ -1,7 +1,9 @@
 import io
 import os
+import re
 import uuid
 import discord
+import textwrap
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
@@ -50,7 +52,7 @@ def parse_message(message_content: str):
         return None
 
     meme_name = split_message[1]
-    meme_text = ''.join(split_message[2:])
+    meme_text = ' '.join(split_message[2:])
 
     return (meme_name, meme_text)
 
@@ -61,20 +63,27 @@ async def send_failure(channel: discord.TextChannel):
 
 async def send_spongebob_meme(meme_text: str, channel: discord.TextChannel):
     meme_image_path = f'spongebob-{uuid.uuid4()}.jpg'
+    meme_text = textwrap.fill(spongify_text(meme_text), 20)
     with open('spongebob.jpg', 'rb') as f:
         img = Image.open(io.BytesIO(f.read()))
         # buffer = io.BytesIO()
         draw = ImageDraw.Draw(img)
 
         font = ImageFont.truetype('Impact', 48)
-        
-        draw.text(((img.size[0] / 2), img.size[1] * 2 /3), meme_text, font=font)
+
+        img_x, img_y = img.size
+        textsize_x, textsize_y = draw.textsize(meme_text, font=font)
+        position = ((img_x - textsize_x) / 2, img.size[1] * 2 /3)
+        draw.multiline_text(position, meme_text, font=font, align='center', spacing=4)
         img.save(meme_image_path, format='JPEG')
 
     with open(meme_image_path, 'rb') as f:
         await channel.send(file=discord.File(f))
     
     os.remove(meme_image_path)  # cleanup
+
+def spongify_text(text: str):
+    return re.sub('([AOEUI])', lambda x: x.group(1).lower(), text.upper())
 
 
 client.run(os.getenv('MEME_BOT_TOKEN'))
