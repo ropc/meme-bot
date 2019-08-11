@@ -1,28 +1,19 @@
 import abc
 import io
-import os
 import re
 import uuid
 import textwrap
-from pathlib import Path
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
-from .utils import draw_outlined_text
-
-
-# this will be something like ../meme-bot/src/memes
-module_path = os.path.dirname(os.path.abspath(__file__))
-package_root_dir = str(Path(module_path).parents[1])
+from utils import draw_outlined_text
 
 
 def spogebob_meme(meme_text) -> str:
     meme_image_path = f'spongebob-{uuid.uuid4()}.jpg'
     meme_text = textwrap.fill(spongify_text(meme_text), 20)
-    
-    with open(os.path.join(package_root_dir, 'assets', 'spongebob.jpg'), 'rb') as f:
+    with open('../../assets/spongebob.jpg', 'rb') as f:
         img = Image.open(io.BytesIO(f.read()))
-        # buffer = io.BytesIO()
         draw = ImageDraw.Draw(img)
 
         font = ImageFont.truetype('Impact', 48)
