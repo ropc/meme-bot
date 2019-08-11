@@ -14,7 +14,7 @@ client = discord.Client()
 
 
 meme_generators = {
-    'spongebob': memes.spogebob_meme
+    'spongebob': memes.spongebob.spogebob_meme
 }
 
 
