@@ -44,14 +44,18 @@ async def respond_to_message(message: discord.Message):
             print('bad message')
             return await send_failure(message.channel)
 
-        meme_name, meme_text = parsed_message
+        command_name, command_arg = parsed_message
 
-        meme_generator: memes.BaseMeme = memeloader.get(meme_name)
+        if command_name == 'list':
+            aliases = ', '.join(memeloader.getaliases())
+            return await message.channel.send(f'I know these memes: {aliases}')
+
+        meme_generator: memes.BaseMeme = memeloader.get(command_name)
         if meme_generator is None:
             print('idk message')
             return await send_failure(message.channel)
         # do something
-        return await handle_meme(meme_text, meme_generator, message.channel)
+        return await handle_meme(command_arg, meme_generator, message.channel)
 
 
 async def handle_meme(meme_text, meme_generator: memes.BaseMeme, channel: discord.TextChannel):
@@ -68,10 +72,10 @@ def parse_message(message_content: str):
     if len(split_message) < 2:
         return None
 
-    meme_name = split_message[1]
-    meme_text = ' '.join(split_message[2:])
+    command_name = split_message[1]
+    command_arg = ' '.join(split_message[2:])
 
-    return (meme_name, meme_text)
+    return (command_name, command_arg)
 
 
 async def send_failure(channel: discord.TextChannel):
