@@ -10,6 +10,9 @@ pylint = "*"
 [packages]
 discord-py = "*"
 pillow = "*"
+attrs = "*"
+cattrs = "*"
+jsonpickle = "*"
 
 [requires]
 python_version = "3.6"

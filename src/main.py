@@ -14,8 +14,9 @@ from PIL import ImageDraw
 client = discord.Client()
 
 meme_generators: Dict[str, memes.BaseMeme] = {
-    'spongebob': memes.SpongeBob(),
-    'change-my-mind': memes.ChangeMyMind()
+    'spongebob': memes.GenericMeme(memes.sb_bottom),
+    'change-my-mind': memes.ChangeMyMind(),
+    'mouthfeel': memes.Mouthfeel()
 }
 
 
