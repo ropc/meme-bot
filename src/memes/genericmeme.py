@@ -9,11 +9,11 @@ from .plugins import BasePlugin
 @attr.s
 class MemeConfig:
     image_filename: str = attr.ib()
+    alias: str = attr.ib()
     plugins: List[BasePlugin] = attr.ib()
 
 
 class GenericMeme(BaseMeme):
-
     def __init__(self, config: MemeConfig):
         self.config = config
 

@@ -2,7 +2,7 @@ import textwrap
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
-from .utils import find_centered_position
+from .plugins.utils import find_centered_position
 from .basememe import BaseMeme
 
 

@@ -5,7 +5,7 @@ from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
 from .baseplugin import BasePlugin
-from ..utils import find_centered_position, draw_outlined_text
+from .utils import find_centered_position, draw_outlined_text
 
 
 class TextPosition(IntEnum):

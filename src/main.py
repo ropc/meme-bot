@@ -13,12 +13,10 @@ from PIL import ImageDraw
 
 client = discord.Client()
 
-meme_generators: Dict[str, memes.BaseMeme] = {
-    'spongebob': memes.GenericMeme(memes.spongebob_config),
-    'change-my-mind': memes.ChangeMyMind(),
-    'mouthfeel': memes.GenericMeme(memes.mouthfeel_config)
-}
-
+memeloader = memes.MemeLoader([
+    memes.spongebob_config,
+    memes.mouthfeel_config,
+])
 
 @client.event
 async def on_ready():
@@ -47,7 +45,7 @@ async def respond_to_message(message: discord.Message):
 
         meme_name, meme_text = parsed_message
 
-        meme_generator: memes.BaseMeme = meme_generators.get(meme_name)
+        meme_generator: memes.BaseMeme = memeloader.get(meme_name)
         if meme_generator is None:
             print('idk message')
             return await send_failure(message.channel)
