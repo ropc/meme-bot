@@ -10,5 +10,8 @@ class MemeLoader:
     def get(self, alias: str) -> BaseMeme:
         return self.dict.get(alias)
 
-    def getaliases(self) -> Iterable[str]:
+    def aliases(self) -> Iterable[str]:
         return self.dict.keys()
+
+    def items(self):
+        return self.dict.items()

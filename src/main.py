@@ -5,6 +5,7 @@ import uuid
 import discord
 import textwrap
 import memes
+from pygtrie import CharTrie
 from typing import Dict
 from PIL import Image
 from PIL import ImageFont
@@ -13,11 +14,23 @@ from PIL import ImageDraw
 
 client = discord.Client()
 
-memeloader = memes.MemeLoader([
-    memes.spongebob_config,
-    memes.mouthfeel_config,
-    memes.change_my_mind_config
-])
+def create_meme_executor(meme_generator: memes.BaseMeme):
+    async def run_meme(command_arg, channel: discord.TextChannel):
+        return await handle_meme(command_arg, meme_generator, channel)
+    return run_meme
+
+def create_text_response_executor(text: str):
+    async def send_text(command_arg, channel: discord.TextChannel):
+        return await channel.send(text)
+    return send_text
+
+# commands setup
+commands = CharTrie()
+for (alias, meme_generator) in memes.default_meme_loader.items():
+    commands[f'!meme {alias}'] = create_meme_executor(meme_generator)
+aliases = ', '.join(memes.default_meme_loader.aliases())
+commands['!meme list'] = create_text_response_executor(f'I know these memes: {aliases}')
+
 
 @client.event
 async def on_ready():
@@ -44,18 +57,9 @@ async def respond_to_message(message: discord.Message):
             print('bad message')
             return await send_failure(message.channel)
 
-        command_name, command_arg = parsed_message
+        _, command_arg, command_executor = parsed_message
 
-        if command_name == 'list':
-            aliases = ', '.join(memeloader.getaliases())
-            return await message.channel.send(f'I know these memes: {aliases}')
-
-        meme_generator: memes.BaseMeme = memeloader.get(command_name)
-        if meme_generator is None:
-            print('idk message')
-            return await send_failure(message.channel)
-        # do something
-        return await handle_meme(command_arg, meme_generator, message.channel)
+        return await command_executor(command_arg, message.channel)
 
 
 async def handle_meme(meme_text, meme_generator: memes.BaseMeme, channel: discord.TextChannel):
@@ -68,14 +72,13 @@ async def handle_meme(meme_text, meme_generator: memes.BaseMeme, channel: discor
 
 
 def parse_message(message_content: str):
-    split_message = message_content.split(' ')
-    if len(split_message) < 2:
+    command_name, command_executor = commands.longest_prefix(message_content)
+    if command_name is None:
         return None
 
-    command_name = split_message[1]
-    command_arg = ' '.join(split_message[2:])
+    command_arg = message_content[len(command_name):].strip()
 
-    return (command_name, command_arg)
+    return (command_name, command_arg, command_executor)
 
 
 async def send_failure(channel: discord.TextChannel):

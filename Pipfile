@@ -14,6 +14,7 @@ pillow = "*"
 attrs = "*"
 cattrs = "*"
 jsonpickle = "*"
+pygtrie = "*"
 
 [requires]
 python_version = "3.6"
