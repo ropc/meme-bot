@@ -16,6 +16,7 @@ client = discord.Client()
 memeloader = memes.MemeLoader([
     memes.spongebob_config,
     memes.mouthfeel_config,
+    memes.change_my_mind_config
 ])
 
 @client.event
