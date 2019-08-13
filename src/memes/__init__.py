@@ -1,11 +1,23 @@
-from .spongebob import SpongeBob
+from .plugins import DrawText, TrimText, OverrideText, SpongifyText, TextPosition
 from .change_my_mind import ChangeMyMind
-from .mouthfeel import Mouthfeel
 from .basememe import BaseMeme
-from .genericmeme import GenericMeme, MemeConfig, SpongifyText, Text, TextPosition
+from .genericmeme import GenericMeme, MemeConfig
 
-sb_top = MemeConfig(image_filename='spongebob.jpg', plugins=[SpongifyText(), Text(position=TextPosition.TOP)])
-sb_center = MemeConfig(image_filename='spongebob.jpg', plugins=[SpongifyText(), Text(position=TextPosition.CENTER)])
-sb_bottom = MemeConfig(image_filename='spongebob.jpg', plugins=[SpongifyText(), Text(position=TextPosition.BOTTOM)])
-sb_text = MemeConfig(image_filename='spongebob.jpg', plugins=[SpongifyText(), Text(hasborder=False)])
-sb_nottext = MemeConfig(image_filename='spongebob.jpg', plugins=[Text()])
+
+spongebob_config = MemeConfig(
+    image_filename='spongebob.jpg',
+    plugins=[
+        SpongifyText(),
+        DrawText(position=TextPosition.BOTTOM)
+    ]
+)
+
+mouthfeel_config = MemeConfig(
+    image_filename='mouthfeel.jpg',
+    plugins=[
+        TrimText(numwords=1),
+        DrawText(position=TextPosition.BOTTOM, fontsize=72),
+        OverrideText(text='Why is no one talking about the'),
+        DrawText(position=TextPosition.TOP, maxwidth=40),
+    ]
+)
