@@ -4,7 +4,7 @@ import re
 import uuid
 import discord
 import textwrap
-import memes
+from memes import Meme, ALL_MEMES
 from pygtrie import CharTrie
 from typing import Dict
 from PIL import Image
@@ -14,7 +14,7 @@ from PIL import ImageDraw
 
 client = discord.Client()
 
-def create_meme_executor(meme_generator: memes.BaseMeme):
+def create_meme_executor(meme_generator: Meme):
     async def run_meme(command_arg, channel: discord.TextChannel):
         return await handle_meme(command_arg, meme_generator, channel)
     return run_meme
@@ -26,9 +26,9 @@ def create_text_response_executor(text: str):
 
 # commands setup
 commands = CharTrie()
-for (alias, meme_generator) in memes.default_meme_loader.items():
-    commands[f'!meme {alias}'] = create_meme_executor(meme_generator)
-aliases = ', '.join(memes.default_meme_loader.aliases())
+for meme in ALL_MEMES:
+    commands[f'!meme {meme.alias}'] = create_meme_executor(meme)
+aliases = ', '.join(m.alias for m in ALL_MEMES)
 commands['!meme list'] = create_text_response_executor(f'I know these memes: {aliases}')
 
 
@@ -62,7 +62,7 @@ async def respond_to_message(message: discord.Message):
         return await command_executor(command_arg, message.channel)
 
 
-async def handle_meme(meme_text, meme_generator: memes.BaseMeme, channel: discord.TextChannel):
+async def handle_meme(meme_text, meme_generator: Meme, channel: discord.TextChannel):
     meme_image_path = meme_generator.generate(meme_text)
 
     with open(meme_image_path, 'rb') as f:
@@ -82,7 +82,7 @@ def parse_message(message_content: str):
 
 
 async def send_failure(channel: discord.TextChannel):
-    return await channel.send("I don't know that meme =(")
+    return await channel.send("I don't know that command =(")
 
 
 client.run(os.getenv('MEME_BOT_TOKEN'))

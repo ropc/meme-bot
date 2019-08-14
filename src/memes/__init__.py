@@ -1,11 +1,8 @@
 from .plugins import DrawText, TrimText, OverrideText, SpongifyText, TextPosition, Coordinate
-from .change_my_mind import ChangeMyMind
-from .basememe import BaseMeme
-from .genericmeme import GenericMeme, MemeConfig
-from .memeloader import MemeLoader
+from .meme import Meme
 
-default_meme_loader = MemeLoader([
-    MemeConfig(
+ALL_MEMES = [
+    Meme(
         image_filename='spongebob.jpg',
         alias='spongebob',
         plugins=[
@@ -13,7 +10,7 @@ default_meme_loader = MemeLoader([
             DrawText(position=TextPosition.BOTTOM)
         ]
     ),
-    MemeConfig(
+    Meme(
         image_filename='mouthfeel.jpg',
         alias='mouthfeel',
         plugins=[
@@ -23,7 +20,7 @@ default_meme_loader = MemeLoader([
             DrawText(position=TextPosition.TOP, maxwidth=40),
         ]
     ),
-    MemeConfig(
+    Meme(
         image_filename='change-my-mind.jpg',
         alias='change my mind',
         plugins=[
@@ -31,4 +28,4 @@ default_meme_loader = MemeLoader([
                 maxwidth=15, fontsize=24, fontcolor='black', hasborder=False)
         ]
     )
-])
+]
