@@ -1,4 +1,4 @@
-from .plugins import DrawText, TrimText, OverrideText, SpongifyText, TextPosition, Coordinate
+from .plugins import DrawText, TrimText, OverrideText, SpongifyText, TextPosition, Coordinate, SplitText
 from .meme import Meme
 
 ALL_MEMES = [

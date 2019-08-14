@@ -23,10 +23,12 @@ class Meme:
 
         with open(os.path.join(package_root_dir, 'assets', self.image_filename), 'rb') as f:
             image = Image.open(io.BytesIO(f.read()))
-            
+            context = {'text': text}
+
+            #pylint: disable=not-an-iterable
             for plugin in self.plugins:
-                text = plugin.draw(image, text)
-            
+                plugin.draw(image, context)
+
             image.save(meme_unique_image_path, format='JPEG')
 
         return meme_unique_image_path

@@ -5,8 +5,11 @@ from .baseplugin import BasePlugin
 
 
 @attr.s(kw_only=True)
-class SpongifyText(BasePlugin):
+class SplitText(BasePlugin):
+    separator: str = attr.ib()
+
     def draw(self, image: Image, context: Dict):
-        vowels = set('aoeuiAOEUI')
         text = context[self.inputtextkey]
-        context[self.inputtextkey] = ''.join(letter.lower() if letter in vowels else letter.upper() for letter in text)
+        for (i, item) in enumerate(text.split(self.separator)):
+            context[f'text-{i}'] = item.strip()
+ 

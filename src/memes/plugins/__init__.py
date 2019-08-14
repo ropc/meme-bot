@@ -3,3 +3,4 @@ from .drawtext import DrawText, TextPosition, Coordinate
 from .overridetext import OverrideText
 from .spongifytext import SpongifyText
 from .trimtext import TrimText
+from .splittext import SplitText

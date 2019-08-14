@@ -1,11 +1,13 @@
 import attr
+from typing import Dict
 from PIL import Image
 from .baseplugin import BasePlugin
 
 
-@attr.s
+@attr.s(kw_only=True)
 class TrimText(BasePlugin):
     numwords: int = attr.ib()
 
-    def draw(self, image: Image, text: str) -> str:
-        return ''.join(text.split(' ')[:self.numwords])
+    def draw(self, image: Image, context: Dict):
+        text = context[self.inputtextkey]
+        context[self.inputtextkey] = ''.join(text.split(' ')[:self.numwords])

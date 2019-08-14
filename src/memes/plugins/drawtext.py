@@ -1,6 +1,7 @@
 import textwrap
 import attr
 from enum import IntEnum
+from typing import Dict
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
@@ -19,7 +20,7 @@ class Coordinate:
     x: float = attr.ib()
     y: float = attr.ib()
 
-@attr.s
+@attr.s(kw_only=True)
 class DrawText(BasePlugin):
     position: TextPosition = attr.ib(default=TextPosition.BOTTOM)
     customposition: Coordinate = attr.ib(default=None)
@@ -29,8 +30,8 @@ class DrawText(BasePlugin):
     hasborder: bool = attr.ib(default=True)
     fontcolor: str = attr.ib(default='white')
 
-    def draw(self, image: Image, text: str) -> str:
-        text = textwrap.fill(text, self.maxwidth)
+    def draw(self, image: Image, context: Dict):
+        text = textwrap.fill(context[self.inputtextkey], self.maxwidth)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(self.font, self.fontsize)
 
@@ -41,13 +42,12 @@ class DrawText(BasePlugin):
         else:
             draw.multiline_text(position, text, align='center', font=font, fill=self.fontcolor)
 
-        return text
-
     def gettextposition(self, image: Image, draw: ImageDraw, font: ImageFont, text: str) -> (float, float):
         center = (image.size[0] / 2, image.size[1] / 2)
         position_centered_x, position_centered_y = find_centered_position(center, draw.textsize(text, font=font))
 
-        if self.position == TextPosition.CUSTOM and self.customposition:
+        if self.position == TextPosition.CUSTOM and self.customposition is not None:
+            #pylint: disable=no-member
             return find_centered_position((self.customposition.x, self.customposition.y), draw.textsize(text, font=font))
         elif self.position == TextPosition.TOP:
             position_y = image.size[1] * 0.05
