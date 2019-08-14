@@ -16,7 +16,14 @@ client = discord.Client()
 
 def create_meme_executor(meme_generator: Meme):
     async def run_meme(command_arg, channel: discord.TextChannel):
-        return await handle_meme(command_arg, meme_generator, channel)
+        try:
+            meme_image_path = meme_generator.generate(command_arg)
+            with open(meme_image_path, 'rb') as f:
+                await channel.send(file=discord.File(f))
+            os.remove(meme_image_path)  # cleanup
+        except Exception as e:
+            print(e)
+            await channel.send('Something went wrong when trying to send your meme =(')
     return run_meme
 
 def create_text_response_executor(text: str):
@@ -60,19 +67,6 @@ async def respond_to_message(message: discord.Message):
         _, command_arg, command_executor = parsed_message
 
         return await command_executor(command_arg, message.channel)
-
-
-async def handle_meme(meme_text, meme_generator: Meme, channel: discord.TextChannel):
-    try:
-        meme_image_path = meme_generator.generate(meme_text)
-
-        with open(meme_image_path, 'rb') as f:
-            await channel.send(file=discord.File(f))
-
-        os.remove(meme_image_path)  # cleanup
-    except Exception as e:
-        print(e)
-        await channel.send('Something went wrong when trying to send your meme =(')
 
 
 def parse_message(message_content: str):
