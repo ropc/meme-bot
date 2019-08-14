@@ -63,12 +63,16 @@ async def respond_to_message(message: discord.Message):
 
 
 async def handle_meme(meme_text, meme_generator: Meme, channel: discord.TextChannel):
-    meme_image_path = meme_generator.generate(meme_text)
+    try:
+        meme_image_path = meme_generator.generate(meme_text)
 
-    with open(meme_image_path, 'rb') as f:
-        await channel.send(file=discord.File(f))
+        with open(meme_image_path, 'rb') as f:
+            await channel.send(file=discord.File(f))
 
-    os.remove(meme_image_path)  # cleanup
+        os.remove(meme_image_path)  # cleanup
+    except Exception as e:
+        print(e)
+        await channel.send('Something went wrong when trying to send your meme =(')
 
 
 def parse_message(message_content: str):
