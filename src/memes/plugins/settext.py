@@ -5,8 +5,8 @@ from .baseplugin import BasePlugin
 
 
 @attr.s(kw_only=True)
-class OverrideText(BasePlugin):
+class SetText(BasePlugin):
     text: str = attr.ib()
 
-    def draw(self, image: Image, context: Dict):
+    def run(self, image: Image, context: Dict):
         context[self.inputtextkey] = self.text

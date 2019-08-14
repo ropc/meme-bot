@@ -30,7 +30,7 @@ class DrawText(BasePlugin):
     hasborder: bool = attr.ib(default=True)
     fontcolor: str = attr.ib(default='white')
 
-    def draw(self, image: Image, context: Dict):
+    def run(self, image: Image, context: Dict):
         text = textwrap.fill(context[self.inputtextkey], self.maxwidth)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(self.font, self.fontsize)

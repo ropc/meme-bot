@@ -8,6 +8,6 @@ from .baseplugin import BasePlugin
 class TrimText(BasePlugin):
     numwords: int = attr.ib()
 
-    def draw(self, image: Image, context: Dict):
+    def run(self, image: Image, context: Dict):
         text = context[self.inputtextkey]
         context[self.inputtextkey] = ''.join(text.split(' ')[:self.numwords])

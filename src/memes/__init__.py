@@ -1,4 +1,4 @@
-from .plugins import DrawText, TrimText, OverrideText, SpongifyText, TextPosition, Coordinate, SplitText
+from .plugins import DrawText, TrimText, SetText, SpongifyText, TextPosition, Coordinate, SplitText
 from .meme import Meme
 
 ALL_MEMES = [
@@ -16,8 +16,8 @@ ALL_MEMES = [
         plugins=[
             TrimText(numwords=1),
             DrawText(position=TextPosition.BOTTOM, fontsize=72),
-            OverrideText(text='Why is no one talking about the'),
-            DrawText(position=TextPosition.TOP, maxwidth=40),
+            SetText(text='Why is no one talking about the', inputtextkey='headertext'),
+            DrawText(position=TextPosition.TOP, maxwidth=40, inputtextkey='headertext'),
         ]
     ),
     Meme(

@@ -27,7 +27,7 @@ class Meme:
 
             #pylint: disable=not-an-iterable
             for plugin in self.plugins:
-                plugin.draw(image, context)
+                plugin.run(image, context)
 
             image.save(meme_unique_image_path, format='JPEG')
 
