@@ -15,7 +15,7 @@ package_root_dir = str(Path(module_path).parents[1])
 @attr.s
 class Meme:
     image_filename: str = attr.ib()
-    alias: str = attr.ib()
+    aliases: List[str] = attr.ib()
     plugins: List[BasePlugin] = attr.ib()
 
     def generate(self, text):

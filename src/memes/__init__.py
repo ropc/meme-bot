@@ -4,7 +4,7 @@ from .meme import Meme
 ALL_MEMES = [
     Meme(
         image_filename='spongebob.jpg',
-        alias='spongebob',
+        aliases=['spongebob', 'sb'],
         plugins=[
             SpongifyText(),
             DrawText(position=TextPosition.BOTTOM)
@@ -12,7 +12,7 @@ ALL_MEMES = [
     ),
     Meme(
         image_filename='mouthfeel.jpg',
-        alias='mouthfeel',
+        alias=['mouthfeel'],
         plugins=[
             TrimText(numwords=1),
             DrawText(position=TextPosition.BOTTOM, fontsize=72),
@@ -22,7 +22,7 @@ ALL_MEMES = [
     ),
     Meme(
         image_filename='change-my-mind.jpg',
-        alias='change my mind',
+        alias=['change my mind', 'change-my-mind'],
         plugins=[
             DrawText(position=TextPosition.CUSTOM, customposition=Coordinate(x=316.5, y=256.5),
                 maxwidth=15, fontsize=24, fontcolor='black', hasborder=False)
@@ -30,7 +30,7 @@ ALL_MEMES = [
     ),
     Meme(
         image_filename='distracted-bf.jpg',
-        alias='distracted bf',
+        alias=['distracted bf', 'distracted-bf'],
         plugins=[
             SplitText(separator='/'),
             DrawText(position=TextPosition.CUSTOM, customposition=Coordinate(x=198, y=310),

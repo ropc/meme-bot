@@ -13,7 +13,9 @@ class MemeBot(discord.Client):
         # commands setup
         self.commands = CharTrie()
         for meme in known_memes:
-            self.commands[f'!meme {meme.alias}'] = create_meme_executor(meme)
+            executor = create_meme_executor(meme)
+            for alias in meme.aliases:
+                self.commands[f'!meme {alias}'] = executor
     
         aliases = ', '.join(m.aliases[0] for m in known_memes)
         self.commands['!meme list'] = create_text_response_executor(f'I know these memes: {aliases}')
