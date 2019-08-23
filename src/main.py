@@ -1,18 +1,57 @@
-import io
 import os
-import re
-import uuid
 import discord
-import textwrap
-from memes import Meme, ALL_MEMES
 from pygtrie import CharTrie
-from typing import Dict
-from PIL import Image
-from PIL import ImageFont
-from PIL import ImageDraw
+from typing import Dict, List
+from memes import Meme, ALL_MEMES
 
 
-client = discord.Client()
+class MemeBot(discord.Client):
+
+    def __init__(self, *, known_memes: List[Meme], **options):
+        super().__init__(self, **options)
+
+        # commands setup
+        self.commands = CharTrie()
+        for meme in known_memes:
+            self.commands[f'!meme {meme.alias}'] = create_meme_executor(meme)
+    
+        aliases = ', '.join(m.aliases[0] for m in known_memes)
+        self.commands['!meme list'] = create_text_response_executor(f'I know these memes: {aliases}')
+
+    async def on_ready(self):
+        print(f'We have logged in as {self.user}')
+
+    async def on_message(self, message: discord.Message):
+        print(f'received message from {message.author.name}')
+        if message.author == self.user:
+            return
+
+        if message.content.startswith('!meme'):
+            await self.respond_to_message(message)
+
+    async def respond_to_message(self, message: discord.Message):
+        async with message.channel.typing():
+            parsed_message = self.parse_message(message.content)
+            if parsed_message is None:
+                print('bad message')
+                return await self.send_failure(message.channel)
+
+            _, command_arg, command_executor = parsed_message
+
+            return await command_executor(command_arg, message.channel)
+    
+    async def send_failure(self, channel: discord.TextChannel):
+        return await channel.send("I don't know that command =(")
+    
+    def parse_message(self, message_content: str):
+        command_name, command_executor = self.commands.longest_prefix(message_content)
+        if command_name is None:
+            return None
+
+        command_arg = message_content[len(command_name):].strip()
+
+        return (command_name, command_arg, command_executor)
+
 
 def create_meme_executor(meme_generator: Meme):
     async def run_meme(command_arg, channel: discord.TextChannel):
@@ -26,61 +65,13 @@ def create_meme_executor(meme_generator: Meme):
             await channel.send('Something went wrong when trying to send your meme =(')
     return run_meme
 
+
 def create_text_response_executor(text: str):
     async def send_text(command_arg, channel: discord.TextChannel):
         return await channel.send(text)
     return send_text
 
-# commands setup
-commands = CharTrie()
-for meme in ALL_MEMES:
-    commands[f'!meme {meme.alias}'] = create_meme_executor(meme)
-aliases = ', '.join(m.alias for m in ALL_MEMES)
-commands['!meme list'] = create_text_response_executor(f'I know these memes: {aliases}')
 
-
-@client.event
-async def on_ready():
-    print('We have logged in as {0.user}'.format(client))
-
-@client.event
-async def on_message(message):
-    print(message)
-    if message.author == client.user:
-        return
-
-    if is_talking_to_bot(message.content):
-        await respond_to_message(message)
-
-
-def is_talking_to_bot(message_content: str) -> bool:
-    return message_content.startswith('!meme')
-
-
-async def respond_to_message(message: discord.Message):
-    async with message.channel.typing():
-        parsed_message = parse_message(message.content)
-        if parsed_message is None:
-            print('bad message')
-            return await send_failure(message.channel)
-
-        _, command_arg, command_executor = parsed_message
-
-        return await command_executor(command_arg, message.channel)
-
-
-def parse_message(message_content: str):
-    command_name, command_executor = commands.longest_prefix(message_content)
-    if command_name is None:
-        return None
-
-    command_arg = message_content[len(command_name):].strip()
-
-    return (command_name, command_arg, command_executor)
-
-
-async def send_failure(channel: discord.TextChannel):
-    return await channel.send("I don't know that command =(")
-
-
-client.run(os.getenv('MEME_BOT_TOKEN'))
+if __name__ == "__main__":
+    bot = MemeBot(known_memes=ALL_MEMES)
+    bot.run(os.getenv('MEME_BOT_TOKEN'))
