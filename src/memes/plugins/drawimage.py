@@ -15,29 +15,33 @@ from .utils import Coordinate, Position, find_centered_position, draw_outlined_t
 async def saveimage(session, url) -> str:
     async with session.get(url) as response:
         image_data = await response.read()
-        temp_image_path = str(uuid4())
+        temp_image_path = f'{uuid4()}.jpg'
         with open(temp_image_path, 'wb+') as f:
             f.write(image_data)
-        print('saved image')
         return temp_image_path
 
 
 @attr.s(kw_only=True)
 class DrawImage(BasePlugin):
-    position: Coordinate = attr.ib(default=None)
+    position: Coordinate = attr.ib()
+    size: Coordinate = attr.ib(default=None)
 
     async def run(self, image: Image, context: Dict):
         url = context[self.inputtextkey]
-        print('running drawimage at', url)
 
         async with aiohttp.ClientSession() as session:
             temp_image_path = await saveimage(session, url)
 
         with open(temp_image_path, 'rb') as f:
-            custom_image = Image.open(io.BytesIO(f.read()))
+            custom_image: Image = Image.open(io.BytesIO(f.read()))
+            if self.size:
+                #pylint: disable=no-member
+                custom_image = custom_image.resize((self.size.x, self.size.y))
 
-            print('pasting image at', self.position)
+            size_x, size_y = custom_image.size[0], custom_image.size[1]
             #pylint: disable=no-member
-            image.paste(custom_image, box=(self.position.x, self.position.y))
+            pos_x, pos_y = find_centered_position((self.position.x, self.position.y), (size_x, size_y))
+
+            image.paste(custom_image, box=(pos_x, pos_y))
 
         os.remove(temp_image_path)

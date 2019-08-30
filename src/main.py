@@ -1,4 +1,5 @@
 import os
+import traceback
 import attr
 import discord
 from pygtrie import CharTrie
@@ -77,8 +78,8 @@ def create_meme_executor(meme_generator: Meme):
                 message = await channel.send(file=discord.File(f))
             os.remove(meme_image_path)  # cleanup
             return message
-        except Exception as e:
-            print(e)
+        except Exception:
+            traceback.print_exc()
             return await channel.send('Something went wrong when trying to send your meme =(')
     return run_meme
 

@@ -6,8 +6,8 @@ from PIL import ImageDraw
 
 @attr.s
 class Coordinate:
-    x: float = attr.ib()
-    y: float = attr.ib()
+    x: int = attr.ib()
+    y: int = attr.ib()
 
 
 class Position(IntEnum):
@@ -35,4 +35,4 @@ def find_centered_position(center, size):
 
 
 def _find_offset(length, center):
-    return center - (length / 2)
+    return int(center - (length / 2))
