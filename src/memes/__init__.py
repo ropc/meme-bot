@@ -40,5 +40,18 @@ ALL_MEMES = [
             DrawText(position=TextPosition.CUSTOM, customposition=Coordinate(x=682, y=300),
                 maxwidth=12, fontsize=48, inputtextkey='text-2')
         ]
+    ),
+    Meme(
+        image_filename='brain.jpg',
+        aliases=['brain'],
+        plugins=[
+            SplitText(separator='/'),
+            DrawText(position=TextPosition.CUSTOM, customposition=Coordinate(x=384, y=229),
+                maxwidth=15, fontsize=72, inputtextkey='text-0', fontcolor='black', hastextoutline=False),
+            DrawText(position=TextPosition.CUSTOM, customposition=Coordinate(x=384, y=691),
+                maxwidth=15, fontsize=72, inputtextkey='text-1', fontcolor='black', hastextoutline=False),
+            DrawText(position=TextPosition.CUSTOM, customposition=Coordinate(x=384, y=1168),
+                maxwidth=12, fontsize=72, inputtextkey='text-2', fontcolor='black', hastextoutline=False)
+        ]
     )
 ]
