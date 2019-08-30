@@ -9,5 +9,5 @@ class BasePlugin(abc.ABC):
     inputtextkey: str = attr.ib(default='text')
 
     @abc.abstractmethod
-    def run(self, image: Image, context: Dict):
+    async def run(self, image: Image, context: Dict):
         raise NotImplementedError()

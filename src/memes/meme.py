@@ -18,7 +18,7 @@ class Meme:
     aliases: List[str] = attr.ib()
     plugins: List[BasePlugin] = attr.ib()
 
-    def generate(self, text):
+    async def generate(self, text) -> str:
         meme_unique_image_path = f'{self.image_filename}-{uuid.uuid4()}.jpg'
 
         with open(os.path.join(package_root_dir, 'assets', self.image_filename), 'rb') as f:
@@ -27,7 +27,7 @@ class Meme:
 
             #pylint: disable=not-an-iterable
             for plugin in self.plugins:
-                plugin.run(image, context)
+                await plugin.run(image, context)
 
             image.save(meme_unique_image_path, format='JPEG')
 

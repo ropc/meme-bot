@@ -1,28 +1,16 @@
 import textwrap
 import attr
-from enum import IntEnum
 from typing import Dict
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
 from .baseplugin import BasePlugin
-from .utils import find_centered_position, draw_outlined_text
+from .utils import Coordinate, Position, find_centered_position, draw_outlined_text
 
-
-class TextPosition(IntEnum):
-    TOP = 1
-    CENTER = 2
-    BOTTOM = 3
-    CUSTOM = 4
-
-@attr.s
-class Coordinate:
-    x: float = attr.ib()
-    y: float = attr.ib()
 
 @attr.s(kw_only=True)
 class DrawText(BasePlugin):
-    position: TextPosition = attr.ib(default=TextPosition.BOTTOM)
+    position: Position = attr.ib(default=Position.BOTTOM)
     customposition: Coordinate = attr.ib(default=None)
     maxwidth: int = attr.ib(default=20)
     font: str = attr.ib(default='Impact')
@@ -30,7 +18,7 @@ class DrawText(BasePlugin):
     hastextoutline: bool = attr.ib(default=True)
     fontcolor: str = attr.ib(default='white')
 
-    def run(self, image: Image, context: Dict):
+    async def run(self, image: Image, context: Dict):
         text = textwrap.fill(context[self.inputtextkey], self.maxwidth)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype(self.font, self.fontsize)
@@ -46,14 +34,14 @@ class DrawText(BasePlugin):
         center = (image.size[0] / 2, image.size[1] / 2)
         position_centered_x, position_centered_y = find_centered_position(center, draw.textsize(text, font=font))
 
-        if self.position == TextPosition.CUSTOM and self.customposition is not None:
+        if self.position == Position.CUSTOM and self.customposition is not None:
             #pylint: disable=no-member
             return find_centered_position((self.customposition.x, self.customposition.y), draw.textsize(text, font=font))
-        elif self.position == TextPosition.TOP:
+        elif self.position == Position.TOP:
             position_y = image.size[1] * 0.05
-        elif self.position == TextPosition.CENTER:
+        elif self.position == Position.CENTER:
             position_y = position_centered_y
-        elif self.position == TextPosition.BOTTOM:
+        elif self.position == Position.BOTTOM:
             position_y = (image.size[1] * 0.95) - draw.textsize(text, font=font)[1]
 
         return (position_centered_x, position_y)

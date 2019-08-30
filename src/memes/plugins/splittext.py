@@ -8,7 +8,7 @@ from .baseplugin import BasePlugin
 class SplitText(BasePlugin):
     separator: str = attr.ib()
 
-    def run(self, image: Image, context: Dict):
+    async def run(self, image: Image, context: Dict):
         text = context[self.inputtextkey]
         for (i, item) in enumerate(text.split(self.separator)):
             context[f'text-{i}'] = item.strip()

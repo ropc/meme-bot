@@ -72,7 +72,7 @@ class MemeBot(discord.Client):
 def create_meme_executor(meme_generator: Meme):
     async def run_meme(command_arg, channel: discord.abc.Messageable):
         try:
-            meme_image_path = meme_generator.generate(command_arg)
+            meme_image_path = await meme_generator.generate(command_arg)
             with open(meme_image_path, 'rb') as f:
                 message = await channel.send(file=discord.File(f))
             os.remove(meme_image_path)  # cleanup

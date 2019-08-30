@@ -8,5 +8,5 @@ from .baseplugin import BasePlugin
 class SetText(BasePlugin):
     text: str = attr.ib()
 
-    def run(self, image: Image, context: Dict):
+    async def run(self, image: Image, context: Dict):
         context[self.inputtextkey] = self.text
