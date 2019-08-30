@@ -27,7 +27,7 @@ class DrawText(BasePlugin):
     maxwidth: int = attr.ib(default=20)
     font: str = attr.ib(default='Impact')
     fontsize: int = attr.ib(default=48)
-    hasborder: bool = attr.ib(default=True)
+    hastextoutline: bool = attr.ib(default=True)
     fontcolor: str = attr.ib(default='white')
 
     def run(self, image: Image, context: Dict):
@@ -37,7 +37,7 @@ class DrawText(BasePlugin):
 
         position = self.gettextposition(image, draw, font, text)
 
-        if self.hasborder:
+        if self.hastextoutline:
             draw_outlined_text(draw, position, text, font=font, fill=self.fontcolor)
         else:
             draw.multiline_text(position, text, align='center', font=font, fill=self.fontcolor)

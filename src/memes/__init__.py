@@ -25,7 +25,7 @@ ALL_MEMES = [
         aliases=['change my mind', 'change-my-mind'],
         plugins=[
             DrawText(position=TextPosition.CUSTOM, customposition=Coordinate(x=316.5, y=256.5),
-                maxwidth=15, fontsize=24, fontcolor='black', hasborder=False)
+                maxwidth=15, fontsize=24, fontcolor='black', hastextoutline=False)
         ]
     ),
     Meme(
