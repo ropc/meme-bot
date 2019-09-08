@@ -1,4 +1,5 @@
 import os
+import random
 import traceback
 import attr
 import discord
@@ -35,6 +36,8 @@ class MemeBot(discord.Client):
         memelist_command_executor = create_text_response_executor(f'I know these memes: {aliases}')
         self.commands['!meme list'] = memelist_command_executor
         self.commands['!memelist'] = memelist_command_executor
+        self.commands['!r'] = roll_dice
+        self.commands['!roll'] = roll_dice
 
     async def on_ready(self):
         print(f'We have logged in as {self.user}')
@@ -44,7 +47,7 @@ class MemeBot(discord.Client):
         if message.author == self.user:
             return
 
-        if message.content.startswith('!meme'):
+        if self.commands.shortest_prefix(message.content):  # performance implications?
             await self.respond_to_message(message)
 
     async def respond_to_message(self, message: discord.Message):
@@ -88,6 +91,17 @@ def create_text_response_executor(text: str):
     async def send_text(command_arg, channel: discord.abc.Messageable):
         return await channel.send(text)
     return send_text
+
+async def roll_dice(command_arg, channel: discord.abc.Messageable):
+    try:
+        num_dice, sides = command_arg.split('d')
+        raw_rolls = [random.randint(1, int(sides)) for _ in range(int(num_dice))]
+        total = sum(raw_rolls)
+        formatted_rolls = ', '.join(str(r) for r in raw_rolls)
+        return await channel.send(f'Total: {total}, rolls: {formatted_rolls}')
+    except Exception:
+        traceback.print_exc()
+        return await channel.send('Something went wrong =(')
 
 
 if __name__ == "__main__":

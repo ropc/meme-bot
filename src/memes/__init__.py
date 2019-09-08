@@ -63,7 +63,7 @@ ALL_MEMES = [
                 startswith='http',
                 plugin_a=DrawImage(inputtextkey='text-2', position=Coordinate(x=384, y=1168)),
                 plugin_b=DrawText(position=Position.CUSTOM, customposition=Coordinate(x=384, y=1168),
-                maxwidth=12, fontsize=72, inputtextkey='text-2', fontcolor='black', hastextoutline=False))
+                    maxwidth=12, fontsize=72, inputtextkey='text-2', fontcolor='black', hastextoutline=False))
         ]
     )
 ]
