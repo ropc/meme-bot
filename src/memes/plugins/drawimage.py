@@ -12,12 +12,11 @@ from .baseplugin import BasePlugin
 from .utils import Coordinate, Position, find_centered_position, draw_outlined_text
 
 
-async def saveimage(session, url) -> str:
+async def save_image(session, url) -> io.BufferedIOBase:
     async with session.get(url) as response:
-        image_data = await response.read()
         temp_image_path = f'{uuid4()}.jpg'
         with open(temp_image_path, 'wb+') as f:
-            f.write(image_data)
+            f.write(await response.read())
         return temp_image_path
 
 
@@ -30,10 +29,11 @@ class DrawImage(BasePlugin):
         url = context[self.inputtextkey]
 
         async with aiohttp.ClientSession() as session:
-            temp_image_path = await saveimage(session, url)
+            async with session.get(url) as response:
+                temp_image = io.BytesIO(await response.read())
+            # temp_image_path = await save_image(session, url)
 
-        with open(temp_image_path, 'rb') as f:
-            custom_image: Image = Image.open(io.BytesIO(f.read()))
+        with Image.open(temp_image) as custom_image:
             if self.size:
                 #pylint: disable=no-member
                 custom_image = custom_image.resize((self.size.x, self.size.y))
@@ -44,4 +44,5 @@ class DrawImage(BasePlugin):
 
             image.paste(custom_image, box=(pos_x, pos_y))
 
-        os.remove(temp_image_path)
+        # os.remove(temp_image_path)
+        temp_image.close()

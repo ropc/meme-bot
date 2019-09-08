@@ -18,17 +18,18 @@ class Meme:
     aliases: List[str] = attr.ib()
     plugins: List[BasePlugin] = attr.ib()
 
-    async def generate(self, text) -> str:
-        meme_unique_image_path = f'{self.image_filename}-{uuid.uuid4()}.jpg'
+    async def generate(self, text) -> io.BufferedIOBase:
+        meme_file = io.BytesIO()
+        # meme_unique_image_path = f'{self.image_filename}-{uuid.uuid4()}.jpg'
 
-        with open(os.path.join(package_root_dir, 'assets', self.image_filename), 'rb') as f:
-            image = Image.open(io.BytesIO(f.read()))
+        with Image.open(os.path.join(package_root_dir, 'assets', self.image_filename)) as image:
             context = {'text': text}
 
             #pylint: disable=not-an-iterable
             for plugin in self.plugins:
                 await plugin.run(image, context)
 
-            image.save(meme_unique_image_path, format='JPEG')
+            image.save(meme_file, format='JPEG')
 
-        return meme_unique_image_path
+        meme_file.seek(0)  # reset offset so that file can be read from the start
+        return meme_file

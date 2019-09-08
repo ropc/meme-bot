@@ -76,10 +76,11 @@ class MemeBot(discord.Client):
 def create_meme_executor(meme_generator: Meme):
     async def run_meme(command_arg, channel: discord.abc.Messageable):
         try:
-            meme_image_path = await meme_generator.generate(command_arg)
-            with open(meme_image_path, 'rb') as f:
-                message = await channel.send(file=discord.File(f))
-            os.remove(meme_image_path)  # cleanup
+            meme_image = await meme_generator.generate(command_arg)
+            # with open(meme_image_path, 'rb') as f:
+            df = discord.File(meme_image, filename=meme_generator.image_filename)
+            message = await channel.send(file=df)
+            meme_image.close()
             return message
         except Exception:
             traceback.print_exc()
