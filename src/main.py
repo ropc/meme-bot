@@ -76,12 +76,9 @@ class MemeBot(discord.Client):
 def create_meme_executor(meme_generator: Meme):
     async def run_meme(command_arg, channel: discord.abc.Messageable):
         try:
-            meme_image = await meme_generator.generate(command_arg)
-            # with open(meme_image_path, 'rb') as f:
-            df = discord.File(meme_image, filename=meme_generator.image_filename)
-            message = await channel.send(file=df)
-            meme_image.close()
-            return message
+            async with meme_generator.generate(command_arg) as meme_image:
+                df = discord.File(meme_image, filename=meme_generator.image_filename)
+                return await channel.send(file=df)
         except Exception:
             traceback.print_exc()
             return await channel.send('Something went wrong when trying to send your meme =(')

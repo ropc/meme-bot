@@ -1,9 +1,9 @@
 import abc
 import io
 import os.path
-import uuid
 import attr
-from typing import List
+from contextlib import asynccontextmanager
+from typing import List, AsyncContextManager
 from pathlib import Path
 from PIL import Image
 from .plugins import BasePlugin
@@ -18,18 +18,22 @@ class Meme:
     aliases: List[str] = attr.ib()
     plugins: List[BasePlugin] = attr.ib()
 
-    async def generate(self, text) -> io.BufferedIOBase:
+    @asynccontextmanager
+    async def generate(self, text) -> AsyncContextManager[io.BufferedIOBase]:
         meme_file = io.BytesIO()
-        # meme_unique_image_path = f'{self.image_filename}-{uuid.uuid4()}.jpg'
 
-        with Image.open(os.path.join(package_root_dir, 'assets', self.image_filename)) as image:
+        with Image.open(os.path.join(package_root_dir, 'assets', self.image_filename)) as image:  # type: Image.Image
             context = {'text': text}
 
             #pylint: disable=not-an-iterable
             for plugin in self.plugins:
                 await plugin.run(image, context)
 
-            image.save(meme_file, format='JPEG')
+            image.save(meme_file, format=image.format)
 
         meme_file.seek(0)  # reset offset so that file can be read from the start
-        return meme_file
+
+        try:
+            yield meme_file
+        finally:
+            meme_file.close()

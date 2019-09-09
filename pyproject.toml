@@ -6,7 +6,7 @@ authors = ["ropc <itslikeroar2412@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7po"
 "discord.py" = "^1.2"
 pillow = "^6.1"
 attrs = "^19.1"
