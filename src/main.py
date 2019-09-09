@@ -92,11 +92,21 @@ def create_text_response_executor(text: str):
 
 async def roll_dice(command_arg, channel: discord.abc.Messageable):
     try:
-        num_dice, sides = command_arg.split('d')
-        raw_rolls = [random.randint(1, int(sides)) for _ in range(int(num_dice))]
+        num_dice, num_sides = [int(x) for x in command_arg.split('d')]
+
+        # soft limit. (2k - 16) hardcoded characters in message
+        if num_dice * num_sides.bit_length() > 1984:
+            return await channel.send("I don't have all those dice")
+
+        raw_rolls = [random.randint(1, num_sides) for _ in range(num_dice)]
         total = sum(raw_rolls)
         formatted_rolls = ', '.join(str(r) for r in raw_rolls)
-        return await channel.send(f'Total: {total}, rolls: {formatted_rolls}')
+        message = f'Total: {total}, rolls: {formatted_rolls}'
+
+        if len(message) > 2000:  # discord has a 2k message limit
+            return await channel.send("I don't have all those dice")
+
+        return await channel.send(message)
     except Exception:
         traceback.print_exc()
         return await channel.send('Something went wrong =(')
