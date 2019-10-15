@@ -3,8 +3,8 @@ A discord bot for generating memes.
 
 ## Features
 
-- [Declarative definitions for memes](src/memes/__init__.py)
-- Extensible through [plugins](src/memes/plugins)
+- [Declarative definitions for memes](memebot/memes/__init__.py)
+- Extensible through [plugins](memebot/memes/plugins)
 - Run with docker 🐳
 
 ## Example
