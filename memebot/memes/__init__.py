@@ -65,5 +65,14 @@ ALL_MEMES = [
                 plugin_b=DrawText(position=Position.CUSTOM, customposition=Coordinate(x=384, y=1168),
                     maxwidth=12, fontsize=72, inputtextkey='text-2', fontcolor='black', hastextoutline=False))
         ]
+    ),
+    Meme(
+        image_filename='boromir.jpg',
+        aliases=['one does not simply', 'simply', 'boromir'],
+        plugins=[
+            DrawText(position=Position.BOTTOM, fontsize=42),
+            SetText(text='One does not simply', inputtextkey='toptext'),
+            DrawText(position=Position.TOP, fontsize=42, inputtextkey='toptext')
+        ]
     )
 ]
