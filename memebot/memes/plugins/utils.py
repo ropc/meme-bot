@@ -1,20 +1,27 @@
-import attr
-from enum import IntEnum
+from typing import Union
+from pydantic import BaseModel
+from enum import Enum, auto
 from PIL import ImageFont
 from PIL import ImageDraw
 
 
-@attr.s
-class Coordinate:
-    x: int = attr.ib()
-    y: int = attr.ib()
+class AutoName(Enum):
+    def _generate_next_value_(name, start, count, last_values):
+        return name
 
 
-class Position(IntEnum):
-    TOP = 1
-    CENTER = 2
-    BOTTOM = 3
-    CUSTOM = 4
+class Coordinate(BaseModel):
+    x: int
+    y: int
+
+
+class AutoPosition(AutoName):
+    TOP = auto()
+    CENTER = auto()
+    BOTTOM = auto()
+
+
+Position = Union[AutoPosition, Coordinate]
 
 
 def draw_outlined_text(draw: ImageDraw, position, text: str, **kwargs):

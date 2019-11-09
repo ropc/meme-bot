@@ -1,30 +1,17 @@
 import os
 import random
-import logging as log
-import attr
+import logging
 import discord
+from pydantic import BaseModel
 from pygtrie import CharTrie
 from typing import Dict, List, Callable, Awaitable, Optional
 from memes import Meme, ALL_MEMES
+from command import Command
 
+logging.basicConfig(format='%(asctime)s [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
 
-log.basicConfig(format='%(asctime)s [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
-
-
-@attr.s(frozen=True, kw_only=True)
-class Command:
-    name: str = attr.ib()
-    arg: str = attr.ib()
-    executor: Callable[[str, discord.abc.Messageable], Awaitable[None]] = attr.ib()
-    raw_command: str = attr.ib()
-
-    async def execute(self, messageable: discord.abc.Messageable):
-        try:
-            #pylint: disable=not-callable
-            return await self.executor(self.arg, messageable)
-        except Exception:
-            log.exception(f'error when executing command "{self.raw_command}"')
-            await messageable.send('Something went wrong =(')
+log = logging.getLogger()
+log.setLevel(logging.INFO)
 
 
 class MemeBot(discord.Client):

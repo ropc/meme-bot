@@ -1,31 +1,30 @@
 import abc
 import io
 import os.path
-import attr
+from pydantic import BaseModel
 from contextlib import asynccontextmanager
 from typing import List, AsyncContextManager
 from pathlib import Path
 from PIL import Image
-from .plugins import BasePlugin
+from .plugins import AnyPlugin, USER_INPUT_KEY
 
 # this will be something like ../meme-bot/src/memes
 module_path = os.path.dirname(os.path.abspath(__file__))
 package_root_dir = str(Path(module_path).parents[1])
 
-@attr.s
-class Meme:
-    image_filename: str = attr.ib()
-    aliases: List[str] = attr.ib()
-    plugins: List[BasePlugin] = attr.ib()
+
+class Meme(BaseModel):
+    image_filename: str
+    aliases: List[str]
+    plugins: List[AnyPlugin]
 
     @asynccontextmanager
-    async def generate(self, text) -> AsyncContextManager[io.BufferedIOBase]:
+    async def generate(self, text):
         meme_file = io.BytesIO()
 
         with Image.open(os.path.join(package_root_dir, 'assets', self.image_filename)) as image:  # type: Image.Image
-            context = {'text': text}
+            context = {USER_INPUT_KEY: text}
 
-            #pylint: disable=not-an-iterable
             for plugin in self.plugins:
                 await plugin.run(image, context)
 

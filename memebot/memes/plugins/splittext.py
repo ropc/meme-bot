@@ -1,15 +1,13 @@
-import attr
 from typing import Dict
 from PIL import Image
 from .baseplugin import BasePlugin
 
 
-@attr.s(kw_only=True)
 class SplitText(BasePlugin):
-    separator: str = attr.ib()
+    separator: str
 
     async def run(self, image: Image, context: Dict):
-        text = context[self.inputtextkey]
-        for (i, item) in enumerate(text.split(self.separator)):
+        text = self.get_input(context)
+        for (i, item) in enumerate(text.split(self.separator), 1):
             context[f'text-{i}'] = item.strip()
  
