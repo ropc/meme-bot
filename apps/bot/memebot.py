@@ -5,8 +5,8 @@ import discord
 from pydantic import BaseModel
 from pygtrie import CharTrie
 from typing import Dict, List, Callable, Awaitable, Optional
-from memes import Meme, ALL_MEMES
-from command import Command
+from ..meme_generator import Meme, ALL_MEMES
+from .command import Command
 
 logging.basicConfig(format='%(asctime)s [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
 
