@@ -3,11 +3,10 @@ name = "meme-bot"
 version = "0.1.0"
 description = ""
 authors = ["ropc <itslikeroar2412@gmail.com>"]
-license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-"discord.py" = "^1.2.4"
+"discord.py" = "^1.2.5"
 pillow = "^6.1"
 pygtrie = "^2.3"
 pydantic = "^1.1"
