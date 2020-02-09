@@ -79,8 +79,12 @@ async def roll_dice(command_arg, channel: discord.abc.Messageable):
 
     raw_rolls = [random.randint(1, num_sides) for _ in range(num_dice)]
     total = sum(raw_rolls)
-    formatted_rolls = ', '.join(str(r) for r in raw_rolls)
-    message = f'Total: {total}, rolls: {formatted_rolls}'
+
+    if len(raw_rolls) > 1:
+        formatted_rolls = ', '.join(str(r) for r in raw_rolls)
+        message = f'Total: {total}, rolls: {formatted_rolls}'
+    else:
+        message = f'Total: {total}'
 
     if len(message) > 2000:  # discord has a 2k message limit
         return await channel.send("I don't have all those dice")
