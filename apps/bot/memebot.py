@@ -71,7 +71,7 @@ def create_text_response_executor(text: str):
     return send_text
 
 async def roll_dice(command_arg, channel: discord.abc.Messageable):
-    num_dice, num_sides = [int(x) for x in command_arg.split('d')]
+    num_dice, num_sides = [int(x if x else 1) for x in command_arg.split('d')]
 
     # soft limit. (2k - 16) hardcoded characters in message
     if num_dice * num_sides.bit_length() > 1984:
