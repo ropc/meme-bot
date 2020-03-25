@@ -33,8 +33,8 @@ ALL_MEMES = [
         plugins=[
             SplitText(plugin_input=UserInput(), separator='/'),
             DrawText(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=198, y=310), maxwidth=15, fontsize=48),
-            DrawText(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=472, y=153), maxwidth=15, fontsize=48),
-            DrawText(plugin_input=ContextInput(key='text-2'), position=Coordinate(x=682, y=300), maxwidth=12, fontsize=48)
+            DrawText(plugin_input=ContextInput(key='text-2'), position=Coordinate(x=472, y=153), maxwidth=15, fontsize=48),
+            DrawText(plugin_input=ContextInput(key='text-3'), position=Coordinate(x=682, y=300), maxwidth=12, fontsize=48)
         ]
     ),
     Meme(
