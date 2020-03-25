@@ -91,7 +91,14 @@ async def roll_dice(command_arg, channel: discord.abc.Messageable):
 
     return await channel.send(message)
 
-
-if __name__ == "__main__":
+def run():
     bot = MemeBot(known_memes=ALL_MEMES)
     bot.run(os.getenv('MEME_BOT_TOKEN'))
+
+def run_debug():
+    log.setLevel(logging.DEBUG)
+    bot = MemeBot(known_memes=ALL_MEMES)
+    bot.run(os.getenv('MEME_BOT_TEST_TOKEN'))
+
+if __name__ == "__main__":
+    run()

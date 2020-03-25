@@ -1,9 +1,8 @@
 FROM python:3
 
-RUN pip install --pre poetry==1.0.0b5
+RUN pip install poetry==1.0.3
 COPY . /tmp/meme-bot
 COPY fonts/* /usr/share/fonts/truetype/
 WORKDIR /tmp/meme-bot
-RUN poetry export -f requirements.txt > requirements.txt
-RUN pip install -r requirements.txt
-CMD [ "python", "-m", "apps.bot.memebot" ]
+RUN poetry install
+CMD [ "poetry", "run", "bot" ]

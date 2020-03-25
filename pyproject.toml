@@ -3,6 +3,13 @@ name = "meme-bot"
 version = "0.1.0"
 description = ""
 authors = ["ropc <itslikeroar2412@gmail.com>"]
+packages = [
+    { include = "apps" }
+]
+
+[tool.poetry.scripts]
+bot = "apps.bot.memebot:run"
+bot-test = "apps.bot.memebot:run_debug"
 
 [tool.poetry.dependencies]
 python = "^3.7"
