@@ -7,7 +7,7 @@ ALL_MEMES = [
         aliases=['spongebob', 'sb'],
         plugins=[
             SpongifyText(plugin_input=UserInput()),
-            DrawText(plugin_input=UserInput(), position=AutoPosition.BOTTOM)
+            DrawText(plugin_input=ContextInput(key='spongified-text'), position=AutoPosition.BOTTOM)
         ]
     ),
     Meme(
