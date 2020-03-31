@@ -15,12 +15,20 @@ log = logging.getLogger('memebot')
 log.setLevel(logging.INFO)
 
 
+
+class PlayerConfig(BaseModel):
+    player: Player
+    voice_channel_id: int
+    text_channel_id: int
+
+    class Config:
+        arbitrary_types_allowed = True
+
 class MemeBot(discord.Client):
 
     def __init__(self, *, known_memes: List[Meme]):
         super().__init__()
-        # tuple type is [player, voice_channel_id, text_channel_id]
-        self.guild_player_config: MutableMapping[int, Tuple[Player, int, int]] = {}
+        self.guild_player_config: MutableMapping[int, PlayerConfig] = {}
 
         # commands setup
         self.commands = CharTrie()
@@ -36,6 +44,11 @@ class MemeBot(discord.Client):
         self.commands['!memelist'] = memelist_command_executor
         self.commands['!r'] = roll_dice
         self.commands['!roll'] = roll_dice
+
+        # player commands
+        self.commands['!play'] = create_play_executor(self.guild_player_config.get)
+        self.commands['!skip'] = create_skip_executor(self.guild_player_config.get)
+        self.commands['!queue'] = create_show_queue_executor(self.guild_player_config.get)
 
     async def on_ready(self):
         log.info(f'We have logged in as {self.user}')
@@ -83,37 +96,56 @@ class MemeBot(discord.Client):
 
         player = Player(voice_client=voice_client, on_event_cb=create_player_event_handler(text_channel))
 
-        self.guild_player_config[guild_id] = (player, voice_channel_id, text_channel_id)
+        self.guild_player_config[guild_id] = PlayerConfig(player=player, voice_channel_id=voice_channel_id, text_channel_id=text_channel_id)
 
-        # obviously, this has problems with more than one guild.
-        # not gonna deal with this right now
-        self.commands['!play'] = create_play_executor(player, voice_channel_id, text_channel_id)
-        self.commands['!skip'] = create_skip_executor(player, text_channel_id)
-        self.commands['!queue'] = create_show_queue_executor(player, text_channel_id)
         log.debug('done setting up voice channels')
 
 
-def create_play_executor(player: Player, voice_channel_id: int, text_channel_id: int) -> CommandExecutor:
-    async def play(command_arg: str, channel: discord.TextChannel):
-        if channel.id != text_channel_id:
-            return
-        await player.enqueue(command_arg)
+PlayerConfigProvider = Callable[[int], Optional[PlayerConfig]]
+PlayerCommandExecutor = Callable[[str, discord.TextChannel, PlayerConfig], Awaitable[None]]
+
+
+def ignore_by_player_config_provider(player_config_provider: PlayerConfigProvider) -> Callable[[PlayerCommandExecutor], CommandExecutor]:
+    """Decorator factory to ignore player commands on unsupported servers/channels
+    Arguments:
+        player_config_provider {Provider[PlayerConfig]} -- provides Player and PlayerConfig
+            based on received message's guild id
+    Returns:
+        CommandExecutor -- That will execute the PlayerCommandExecutor when a message
+            is received in the allowed channel
+    """
+    def wrapper(func: PlayerCommandExecutor):
+        def wrapped(command_arg: str, channel: discord.TextChannel):
+            config = player_config_provider(channel.guild.id)
+            if not config:
+                log.debug(f'could not find config for guild id {channel.guild.id}')
+                return
+            if config.text_channel_id != channel.id:
+                log.debug(f'player command in guild {channel.guild.id} did not come from PlayerConfig.text_channel_id {config.text_channel_id}')
+                return
+            return func(command_arg, channel, config)
+        return wrapped
+    return wrapper
+
+
+def create_play_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
+    @ignore_by_player_config_provider(player_config_provider)
+    async def play(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+        await player_config.player.enqueue(command_arg)
     return play
 
 
-def create_skip_executor(player: Player, text_channel_id: int) -> CommandExecutor:
-    async def skip(command_arg: str, channel: discord.TextChannel):
-        if channel.id != text_channel_id:
-            return
-        await player.skip()
+def create_skip_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
+    @ignore_by_player_config_provider(player_config_provider)
+    async def skip(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+        await player_config.player.skip()
     return skip
 
 
-def create_show_queue_executor(player: Player, text_channel_id: int) -> CommandExecutor:
-    async def show_queue(command_arg: str, channel: discord.TextChannel):
-        if channel.id != text_channel_id:
-            return
-        queue = '\n'.join(f'- {item.title}' for item in player.playback_queue)
+def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
+    @ignore_by_player_config_provider(player_config_provider)
+    async def show_queue(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+        queue = '\n'.join(f'- {item.title}' for item in player_config.player.playback_queue)
         await channel.send(f'Up next:\n{queue}')
     return show_queue
 
