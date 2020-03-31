@@ -13,10 +13,11 @@ bot-debug = "apps.bot.memebot:run_debug"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-"discord.py" = "^1.2.5"
+"discord.py" = {extras = ["voice"], version = "^1.2.5"}
 pillow = "^6.1"
 pygtrie = "^2.3"
 pydantic = "^1.1"
+youtube-dl = "^2020.3.24"
 
 [tool.poetry.dev-dependencies]
 ipython = "^7.7"

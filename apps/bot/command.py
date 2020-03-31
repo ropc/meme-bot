@@ -6,10 +6,13 @@ from typing import Callable, Awaitable
 log = logging.getLogger('memebot')
 
 
+CommandExecutor = Callable[[str, discord.abc.Messageable], Awaitable[None]]
+
+
 class Command(BaseModel):
     name: str
     arg: str
-    executor: Callable[[str, discord.abc.Messageable], Awaitable[None]]
+    executor: CommandExecutor
     raw_command: str
 
     async def execute(self, messageable: discord.abc.Messageable):
