@@ -88,7 +88,8 @@ class MemeBot(discord.Client):
         # obviously, this has problems with more than one guild.
         # not gonna deal with this right now
         self.commands['!play'] = create_play_executor(player, voice_channel_id, text_channel_id)
-        # self.commands['!skip'] = create_skip_executor(player, text_channel)
+        self.commands['!skip'] = create_skip_executor(player, text_channel_id)
+        self.commands['!queue'] = create_show_queue_executor(player, text_channel_id)
         log.debug('done setting up voice channels')
 
 
@@ -100,15 +101,32 @@ def create_play_executor(player: Player, voice_channel_id: int, text_channel_id:
     return play
 
 
+def create_skip_executor(player: Player, text_channel_id: int) -> CommandExecutor:
+    async def skip(command_arg: str, channel: discord.TextChannel):
+        if channel.id != text_channel_id:
+            return
+        await player.skip()
+    return skip
+
+
+def create_show_queue_executor(player: Player, text_channel_id: int) -> CommandExecutor:
+    async def show_queue(command_arg: str, channel: discord.TextChannel):
+        if channel.id != text_channel_id:
+            return
+        queue = '\n'.join(f'- {item.title}' for item in player.playback_queue)
+        await channel.send(f'Up next:\n{queue}')
+    return show_queue
+
+
 def create_player_event_handler(text_channel: discord.TextChannel):
     async def player_event_handler(event: PlayerEvent):
         if event.event_type == PlayerEventType.ENQUEUED:
-            await text_channel.send(f'Enqueued {event.context.url}')
+            await text_channel.send(f'Enqueued: {event.context.title}', delete_after=60)
         elif event.event_type == PlayerEventType.STARTED:
-            await text_channel.send(f'Now playing {event.context.url}')
+            await text_channel.send(f'Now playing: {event.context.title}')
 
     async def search_event_handler(event: SearchEvent):
-        await text_channel.send(f'Searching for `{event.keyword}')
+        await text_channel.send(f'Searching for "{event.keyword}"')
 
     async def handler(event: Union[PlayerEvent, SearchEvent]):
         log.debug(f'player handler received event: {event}')

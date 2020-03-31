@@ -7,10 +7,12 @@ import enum
 import discord
 import time
 import youtube_dl as yt
-import logging as log
+import logging
 from pydantic import BaseModel
 from typing import Dict, Deque, Callable, Awaitable, Union, Optional
 
+
+log = logging.getLogger('memebot')
 
 YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search'
 
