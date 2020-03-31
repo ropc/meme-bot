@@ -4,5 +4,5 @@ RUN pip install poetry==1.0.3
 COPY . /tmp/meme-bot
 COPY fonts/* /usr/share/fonts/truetype/
 WORKDIR /tmp/meme-bot
-RUN poetry install
+RUN poetry install --no-dev
 CMD [ "poetry", "run", "bot" ]
