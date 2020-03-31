@@ -13,7 +13,7 @@ from .plugins import BasePlugin, USER_INPUT_KEY
 module_path = os.path.dirname(os.path.abspath(__file__))
 package_root_dir = str(Path(module_path).parents[1])
 
-log = logging.getLogger()
+log = logging.getLogger('memebot')
 
 
 class Meme(BaseModel):

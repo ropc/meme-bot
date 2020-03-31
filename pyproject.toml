@@ -9,7 +9,7 @@ packages = [
 
 [tool.poetry.scripts]
 bot = "apps.bot.memebot:run"
-bot-test = "apps.bot.memebot:run_debug"
+bot-debug = "apps.bot.memebot:run_debug"
 
 [tool.poetry.dependencies]
 python = "^3.7"

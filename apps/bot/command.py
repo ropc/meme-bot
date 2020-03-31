@@ -3,7 +3,7 @@ import logging
 from pydantic import BaseModel
 from typing import Callable, Awaitable
 
-log = logging.getLogger()
+log = logging.getLogger('memebot')
 
 
 class Command(BaseModel):

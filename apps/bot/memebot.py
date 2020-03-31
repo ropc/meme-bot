@@ -8,9 +8,9 @@ from typing import Dict, List, Callable, Awaitable, Optional
 from ..meme_generator import Meme, ALL_MEMES
 from .command import Command
 
-logging.basicConfig(format='%(asctime)s [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
+logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
 
-log = logging.getLogger()
+log = logging.getLogger('memebot')
 log.setLevel(logging.INFO)
 
 
@@ -97,6 +97,12 @@ def run():
 
 def run_debug():
     log.setLevel(logging.DEBUG)
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    import ptvsd
+    ptvsd.enable_attach()
+
     bot = MemeBot(known_memes=ALL_MEMES)
     bot.run(os.getenv('MEME_BOT_TEST_TOKEN'))
 
