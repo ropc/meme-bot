@@ -8,6 +8,7 @@ from typing import Dict, List, Callable, Awaitable, Optional, MutableMapping, Tu
 from ..meme_generator import Meme, ALL_MEMES
 from .command import Command, CommandExecutor
 from .player import Player, PlayerEvent, PlayerEventType, SearchEvent
+from .guildconfig import GuildConfig, get_guild_config
 
 logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
 
@@ -26,8 +27,11 @@ class PlayerConfig(BaseModel):
 
 class MemeBot(discord.Client):
 
-    def __init__(self, *, known_memes: List[Meme]):
+    def __init__(self, *, known_memes: List[Meme], guild_config: str):
         super().__init__()
+        # TODO: consolidate this and MEME_BOT token to a single config
+        self.guild_config = guild_config
+
         self.guild_player_config: MutableMapping[int, PlayerConfig] = {}
 
         # commands setup
@@ -74,31 +78,34 @@ class MemeBot(discord.Client):
             executor=command_executor, raw_command=message_content)
 
     async def setup_voice(self):
-        log.debug('setting up voice channels')
-        # TODO: handle reconnects
-        # TODO: handle multiple guilds
-        guild_id = os.getenv('TEST_GUILD_ID')
-        guild_ids = [g.id for g in self.guilds]
-        if guild_id not in guild_ids:
-            log.info(f'guild not found in {guild_ids}')
-            return
-        voice_channel_id = os.getenv('TEST_VOICE_ID')
-        text_channel_id = os.getenv('TEST_TEXT_ID')
-        voice_channel: discord.VoiceChannel = self.get_channel(voice_channel_id)
-        text_channel: discord.TextChannel = self.get_channel(text_channel_id)
+        log.info('setting up voice channels')
+        for guild in self.guilds:
+            config = get_guild_config(self.guild_config, guild.id)
+            if not config:
+                log.debug(f"guild {guild.id} not found in bot's guilds")
+                continue
+            if guild.id in self.guild_player_config:
+                log.warning(f'already have player config for guild {guild.id}')
+                continue
 
-        if not voice_channel or not text_channel:
-            log.warning(f'could not get defined voice/text channels')
-            return
+            voice_channel: discord.VoiceChannel = self.get_channel(config.voice_channel_id)
+            text_channel: discord.TextChannel = self.get_channel(config.text_channel_id)
 
-        log.info(f'connecting to voice channel: {voice_channel.name}')
-        voice_client: discord.VoiceClient = await voice_channel.connect()
+            if not voice_channel or not text_channel:
+                log.warning(f'could not get voice/text channels for guild {guild.id}. GuildConfig: {config}')
+                continue
 
-        player = Player(voice_client=voice_client, on_event_cb=create_player_event_handler(text_channel))
+            log.debug(f'connecting to voice channel: {voice_channel.id}')
+            voice_client: discord.VoiceClient = await voice_channel.connect()
 
-        self.guild_player_config[guild_id] = PlayerConfig(player=player, voice_channel_id=voice_channel_id, text_channel_id=text_channel_id)
+            player = Player(voice_client=voice_client, on_event_cb=create_player_event_handler(text_channel))
 
-        log.debug('done setting up voice channels')
+            self.guild_player_config[guild.id] = PlayerConfig(
+                player=player,
+                voice_channel_id=config.voice_channel_id,
+                text_channel_id=config.text_channel_id)
+
+        log.info('done setting up voice channels')
 
 
 PlayerConfigProvider = Callable[[int], Optional[PlayerConfig]]
@@ -206,7 +213,7 @@ async def roll_dice(command_arg: str, channel: discord.abc.Messageable):
 
 
 def run():
-    bot = MemeBot(known_memes=ALL_MEMES)
+    bot = MemeBot(known_memes=ALL_MEMES, guild_config=os.getenv('MEME_BOT_GUILD_CONFIG'))
     bot.run(os.getenv('MEME_BOT_TOKEN'))
 
 
@@ -218,7 +225,7 @@ def run_debug():
     import ptvsd
     ptvsd.enable_attach()
 
-    bot = MemeBot(known_memes=ALL_MEMES)
+    bot = MemeBot(known_memes=ALL_MEMES, guild_config=os.getenv('MEME_BOT_TEST_GUILD_CONFIG'))
     bot.run(os.getenv('MEME_BOT_TEST_TOKEN'))
 
 if __name__ == "__main__":
