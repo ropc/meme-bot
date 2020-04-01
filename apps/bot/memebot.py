@@ -275,8 +275,17 @@ def run_debug():
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
 
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-w', '--wait', action='store_true', default=False)
+    args = parser.parse_args()
+
+    log.debug(f'debug args: {args}')
+
     import ptvsd
     ptvsd.enable_attach()
+    if args.wait:
+        ptvsd.wait_for_attach()
 
     bot = MemeBot(known_memes=ALL_MEMES, guild_config=os.getenv('MEME_BOT_TEST_GUILD_CONFIG'))
     bot.run(os.getenv('MEME_BOT_TEST_TOKEN'))
