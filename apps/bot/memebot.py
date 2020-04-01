@@ -128,6 +128,9 @@ def ignore_by_player_config_provider(player_config_provider: PlayerConfigProvide
         CommandExecutor -- That will execute the PlayerCommandExecutor when a message
             is received in the allowed channel
     """
+    async def no_op_awaitable():
+        pass
+
     def wrapper(func: PlayerCommandExecutor):
         @executor()
         @wraps(func)
@@ -135,10 +138,10 @@ def ignore_by_player_config_provider(player_config_provider: PlayerConfigProvide
             config = player_config_provider(channel.guild.id)
             if not config:
                 log.debug(f'could not find config for guild id {channel.guild.id}')
-                return
+                return no_op_awaitable()
             if config.text_channel_id != channel.id:
                 log.debug(f'player command in guild {channel.guild.id} did not come from PlayerConfig.text_channel_id {config.text_channel_id}')
-                return
+                return no_op_awaitable()
             return func(command_arg, channel, config)
         return wrapped
     return wrapper
