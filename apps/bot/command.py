@@ -45,4 +45,4 @@ class Command(BaseModel):
             return await self.executor(self.arg, messageable)  # type: ignore
         except Exception:
             log.exception(f'error when executing command "{self.raw_command}"')
-            await messageable.send('Something went wrong =(')
+            await messageable.send(f'Something went wrong =(\nAttempted to use command "{self.name}": {self.executor.help_string()}')
