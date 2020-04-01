@@ -2,13 +2,14 @@ import os
 import random
 import logging
 import discord
+import uuid
 from pydantic import BaseModel
 from pygtrie import CharTrie, Trie
 from functools import wraps
 from typing import Dict, Iterable, Set, Callable, Awaitable, Optional, MutableMapping, Tuple, Union, Mapping
 from ..meme_generator import Meme, ALL_MEMES
 from .command import Command, CommandExecutor, executor
-from .player import Player, PlayerEvent, PlayerEventType, SearchEvent
+from .player import Player, PlayerEvent, PlayerEventType, SearchEvent, SearchEventType
 from .guildconfig import GuildConfig, get_guild_config
 
 logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
@@ -164,21 +165,34 @@ def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> 
     async def show_queue(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
         '''shows current queue'''
         if len(player_config.player.playback_queue) == 0:
-            return await channel.send('Nothing in queue. Add a song with !play')
+            return await channel.send('Nothing in queue. Add a song with !play', delete_after=30)
         queue = '\n'.join(f'- {item.title}' for item in player_config.player.playback_queue)
-        return await channel.send(f'Up next:\n{queue}')
+        return await channel.send(f'Up next:\n{queue}', delete_after=30)
     return show_queue
 
 
 def create_player_event_handler(text_channel: discord.TextChannel):
+    # maps transaction_id to discord.Message. maybe overkill
+    known_search_messages: MutableMapping[uuid.UUID, discord.Message] = {}
+
     async def player_event_handler(event: PlayerEvent):
         if event.event_type == PlayerEventType.ENQUEUED:
-            await text_channel.send(f'Enqueued: {event.context.title}', delete_after=60)
+            await text_channel.send(f'Added to queue: {event.context.title}', delete_after=30)
         elif event.event_type == PlayerEventType.STARTED:
-            await text_channel.send(f'Now playing: {event.context.title}')
+            await text_channel.send(f'Now playing: {event.context.title}', delete_after=(15 * 60))
 
     async def search_event_handler(event: SearchEvent):
-        await text_channel.send(f'Searching for "{event.keyword}"')
+        if event.event_type == SearchEventType.SEARCHING:
+            message = await text_channel.send(f'Searching for "{event.keyword}"', delete_after=30)
+            known_search_messages[event.transaction_id] = message
+            return
+
+        message = known_search_messages.pop(event.transaction_id, None)
+        if message:
+            await message.delete(delay=0)
+
+        if event.event_type == SearchEventType.SEARCH_ERROR:
+            await text_channel.send(f'Could not find "{event.keyword}"', delete_after=30)
 
     async def handler(event: Union[PlayerEvent, SearchEvent]):
         log.debug(f'player handler received event: {event}')
@@ -203,7 +217,7 @@ def create_memelist_command_executor(memes: Iterable[Meme]) -> CommandExecutor:
     @executor()
     async def send_memelist(command_arg: str, channel: discord.abc.Messageable):
         '''lists all known memes'''
-        return await channel.send(f'I know these memes: {aliases}')
+        return await channel.send(f'I know these memes: {aliases}', delete_after=30)
     return send_memelist
 
 
@@ -214,7 +228,7 @@ async def roll_dice(command_arg: str, channel: discord.abc.Messageable):
 
     # soft limit. (2k - 16) hardcoded characters in message
     if num_dice * num_sides.bit_length() > 1984:
-        return await channel.send("I don't have all those dice")
+        return await channel.send("I don't have all those dice", delete_after=30)
 
     raw_rolls = [random.randint(1, num_sides) for _ in range(num_dice)]
     total = sum(raw_rolls)
@@ -226,7 +240,7 @@ async def roll_dice(command_arg: str, channel: discord.abc.Messageable):
         message = f'Total: {total}'
 
     if len(message) > 2000:  # discord has a 2k message limit
-        return await channel.send("I don't have all those dice")
+        return await channel.send("I don't have all those dice", delete_after=30)
 
     return await channel.send(message)
 
@@ -250,7 +264,7 @@ def create_help_command_executor(commands: Trie) -> CommandExecutor:
         '''lists all commands'''
         if len(command_arg) == 0:
             commands_string = '\n'.join(format_command(aliases, executor) for (executor, aliases) in inverted_commands_map(commands).items())
-            return await channel.send(f'known commands are:\n{commands_string}')
+            return await channel.send(f'known commands are:\n{commands_string}', delete_after=30)
 
         command_name = command_arg if command_arg.startswith('!') else f'!{command_arg}'
         alias, executor = commands.longest_prefix(command_name)
@@ -260,8 +274,8 @@ def create_help_command_executor(commands: Trie) -> CommandExecutor:
             alias, executor = commands.longest_prefix(f'!meme {command_name[1:]}')
 
         if not alias or not executor:
-            return await channel.send(f"i don't know the command '{command_name}'")
-        return await channel.send(format_command([alias], executor))
+            return await channel.send(f"i don't know the command '{command_name}'", delete_after=30)
+        return await channel.send(format_command([alias], executor), delete_after=30)
     return help_command
 
 

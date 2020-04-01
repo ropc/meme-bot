@@ -8,6 +8,7 @@ import discord
 import time
 import youtube_dl as yt
 import logging
+import uuid
 from pydantic import BaseModel
 from typing import Dict, Deque, Callable, Awaitable, Union, Optional
 
@@ -43,12 +44,14 @@ class PlayerEvent(BaseModel):
 
 class SearchEventType(enum.Enum):
     SEARCHING = 1
-    SEARCH_ERROR = 2
+    SEARCH_COMPLETE = 2
+    SEARCH_ERROR = 3
 
 
 class SearchEvent(BaseModel):
     event_type: SearchEventType
     keyword: str
+    transaction_id: uuid.UUID
 
 
 PlayerEventCallback = Callable[[Union[PlayerEvent, SearchEvent]], Awaitable[None]]
@@ -67,7 +70,6 @@ class Player:
         async with self.download_lock:
             url = text if text.startswith('http') else await self._search(text)
             if not url:
-                await self.on_event_cb(SearchEvent(event_type=SearchEventType.SEARCH_ERROR, keyword=text))
                 return
             item = await self._get_item(url)
             self.playback_queue.append(item)
@@ -127,11 +129,19 @@ class Player:
 
 
     async def _search(self, keyword: str) -> Optional[str]:
-        result = await asyncio.gather(
+        '''Searches for keyword and emits `SearchEvent`s'''
+        transaction_id = uuid.uuid4()
+        result, _ = await asyncio.gather(
             _find_url(keyword),
-            self.on_event_cb(SearchEvent(event_type=SearchEventType.SEARCHING, keyword=keyword))
+            self.on_event_cb(SearchEvent(event_type=SearchEventType.SEARCHING, keyword=keyword, transaction_id=transaction_id))
         )
-        return result[0]
+
+        if not result:
+            await self.on_event_cb(SearchEvent(event_type=SearchEventType.SEARCH_ERROR, keyword=keyword, transaction_id=transaction_id))
+            return None
+
+        await self.on_event_cb(SearchEvent(event_type=SearchEventType.SEARCH_COMPLETE, keyword=keyword, transaction_id=transaction_id))
+        return result
 
 
 async def _find_url(keyword: str) -> Optional[str]:
@@ -147,5 +157,6 @@ async def _find_url(keyword: str) -> Optional[str]:
             content = await response.json()
             videoId = content.get('items', [{}])[0].get('id', {}).get('videoId')
             if not videoId:
+                log.debug(f'did not find videoId for keyword "{keyword}"')
                 return None
             return f'https://www.youtube.com/watch?v={videoId}'
