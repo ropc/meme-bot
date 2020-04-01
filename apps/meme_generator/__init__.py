@@ -17,7 +17,7 @@ ALL_MEMES = [
         help_string='Usage: !meme mouthfeel <single word>',
         plugins=[
             TrimText(plugin_input=UserInput(), numwords=1),
-            DrawText(plugin_input=UserInput(), position=AutoPosition.BOTTOM, fontsize=72),
+            DrawText(plugin_input=ContextInput(key='trimmed-text'), position=AutoPosition.BOTTOM, fontsize=72),
             DrawText(plugin_input=RawInput(text='Why is no one talking about the'), position=AutoPosition.TOP, maxwidth=40),
         ]
     ),
