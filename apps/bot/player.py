@@ -144,7 +144,7 @@ class Player:
             ytdl.download([item.url])
 
 
-    async def _search(self, keyword: str, transaction_id: str) -> Optional[str]:
+    async def _search(self, keyword: str, transaction_id: uuid.UUID) -> Optional[str]:
         '''Searches for keyword and emits `SearchEvent`s'''
         result, _ = await asyncio.gather(
             _find_url(keyword),
