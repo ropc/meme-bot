@@ -26,6 +26,7 @@ yt_opts = {
 class PlaybackItem(BaseModel):
     title: str
     url: str
+    transaction_id: uuid.UUID
     filepath: str
     download_url: str
 
@@ -39,12 +40,15 @@ class PlayerEventType(enum.Enum):
 
 class PlayerEvent(BaseModel):
     event_type: PlayerEventType
-    context: PlaybackItem
+    item: PlaybackItem
+
+    @property
+    def transaction_id(self) -> uuid.UUID:
+        return self.item.transaction_id
 
 
 class SearchEventType(enum.Enum):
     SEARCHING = 1
-    SEARCH_COMPLETE = 2
     SEARCH_ERROR = 3
 
 
@@ -53,6 +57,8 @@ class SearchEvent(BaseModel):
     keyword: str
     transaction_id: uuid.UUID
 
+
+BasePlayerEvent = Union[PlayerEventType, SearchEvent]
 
 PlayerEventCallback = Callable[[Union[PlayerEvent, SearchEvent]], Awaitable[None]]
 
@@ -63,21 +69,21 @@ class Player:
         self.voice_client = voice_client
         self.on_event_cb = on_event_cb
         self.playback_queue: Deque[PlaybackItem] = collections.deque()
-        self.download_lock = asyncio.Lock()
+        self.queue_lock = asyncio.Lock()
         self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
 
     async def enqueue(self, text: str):
-        async with self.download_lock:
+        transaction_id = uuid.uuid4()
+        async with self.queue_lock:
             url = text if text.startswith('http') else await self._search(text)
             if not url:
                 return
-            item = await self._get_item(url)
+            item = await self._get_item(url, transaction_id)
             self.playback_queue.append(item)
 
-        await asyncio.gather(
-            self.on_event_cb(PlayerEvent(event_type=PlayerEventType.ENQUEUED, context=item)),
-            self._download(item)
-        )
+        await self.on_event_cb(PlayerEvent(event_type=PlayerEventType.ENQUEUED, item=item))
+
+        self._download(item)
 
         if not self.voice_client.is_playing():
             await self._play_next()
@@ -88,32 +94,40 @@ class Player:
 
     async def _play_next(self):
         if len(self.playback_queue) == 0:
+            log.debug('nothing to play in playback_queue')
             return
+
         item = self.playback_queue.popleft()
-        await self._download(item)
-        log.info(f"gonna play {item.url}")
+        self._download(item)
+
+        log.info(f"gonna play {item.title} from {item.url}")
         self.voice_client.play(discord.FFmpegPCMAudio(item.filepath), after=self._create_after(item))
-        await self.on_event_cb(PlayerEvent(event_type=PlayerEventType.STARTED, context=item))
+        await self.on_event_cb(PlayerEvent(event_type=PlayerEventType.STARTED, item=item))
     
     def _create_after(self, item: PlaybackItem):
         async def after(error):
             event_type = PlayerEventType.PLAYBACK_ERROR if error else PlayerEventType.FINISHED
             await asyncio.gather(
-                self.on_event_cb(PlayerEvent(event_type=event_type, context=item)),
+                self.on_event_cb(PlayerEvent(event_type=event_type, item=item)),
                 self._play_next()
             )
             if os.path.isfile(item.filepath):
                 os.remove(item.filepath)
         return lambda error: self.loop.create_task(after(error))
 
-    async def _get_item(self, url: str) -> PlaybackItem:
+    async def _get_item(self, url: str, transaction_id: uuid.UUID) -> PlaybackItem:
         with yt.YoutubeDL(yt_opts) as ytdl:
             info = ytdl.extract_info(url, download=False)
             filepath = ytdl.prepare_filename(info)
             log.debug(f'info for {url}: {info}')
-            return PlaybackItem(title=info['title'], url=url, filepath=filepath, download_url=info['url'])
+            return PlaybackItem(
+                title=info['title'],
+                url=url,
+                filepath=filepath,
+                download_url=info['url'],
+                transaction_id=transaction_id)
 
-    async def _download(self, item: PlaybackItem):
+    def _download(self, item: PlaybackItem):
         """Download video for given url or item
 
         This call is idempotent per item.filepath
@@ -122,7 +136,7 @@ class Player:
             item {PlaybackItem} -- item to download
         """
         if os.path.isfile(item.filepath):
-            log.info(f'already downloaded {item.filepath}')
+            log.debug(f'already downloaded {item.filepath}')
             return
         with yt.YoutubeDL(yt_opts) as ytdl:
             ytdl.download([item.url])
@@ -140,7 +154,6 @@ class Player:
             await self.on_event_cb(SearchEvent(event_type=SearchEventType.SEARCH_ERROR, keyword=keyword, transaction_id=transaction_id))
             return None
 
-        await self.on_event_cb(SearchEvent(event_type=SearchEventType.SEARCH_COMPLETE, keyword=keyword, transaction_id=transaction_id))
         return result
 
 
@@ -153,10 +166,13 @@ async def _find_url(keyword: str) -> Optional[str]:
             'maxResults': 1,
             'type': 'video'
         }
+        log.debug(f'querying youtube api with keyword: {keyword}')
         async with session.get(YOUTUBE_SEARCH_URL, params=params) as response:  # type: aiohttp.ClientResponse
             content = await response.json()
             videoId = content.get('items', [{}])[0].get('id', {}).get('videoId')
             if not videoId:
-                log.debug(f'did not find videoId for keyword "{keyword}"')
+                log.warning(f'did not find videoId for keyword "{keyword}"')
                 return None
-            return f'https://www.youtube.com/watch?v={videoId}'
+            url = f'https://www.youtube.com/watch?v={videoId}'
+            log.debug(f'youtube link for query "{keyword}": {url}')
+            return url

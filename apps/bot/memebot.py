@@ -6,17 +6,17 @@ import uuid
 from pydantic import BaseModel
 from pygtrie import CharTrie, Trie
 from functools import wraps
-from typing import Dict, Iterable, Set, Callable, Awaitable, Optional, MutableMapping, Tuple, Union, Mapping
+from typing import Dict, Iterable, Set, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping
 from ..meme_generator import Meme, ALL_MEMES
 from .command import Command, CommandExecutor, executor
-from .player import Player, PlayerEvent, PlayerEventType, SearchEvent, SearchEventType
+from .player import Player, PlayerEvent, PlayerEventType, SearchEvent, SearchEventType, BasePlayerEvent
 from .guildconfig import GuildConfig, get_guild_config
 
 logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
 
+logging.getLogger().setLevel(logging.INFO)
 log = logging.getLogger('memebot')
-log.setLevel(logging.INFO)
-
+log.setLevel(logging.DEBUG)
 
 
 class PlayerConfig(BaseModel):
@@ -170,39 +170,49 @@ def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> 
         if len(player_config.player.playback_queue) == 0:
             return await channel.send('Nothing in queue. Add a song with !play', delete_after=30)
         queue = '\n'.join(f'- {item.title}' for item in player_config.player.playback_queue)
-        return await channel.send(f'Up next:\n{queue}', delete_after=30)
+        return await channel.send(f'Up next:\n{queue}', delete_after=60)
     return show_queue
 
 
 def create_player_event_handler(text_channel: discord.TextChannel):
     # maps transaction_id to discord.Message. maybe overkill
-    known_search_messages: MutableMapping[uuid.UUID, discord.Message] = {}
+    known_messages: MutableMapping[uuid.UUID, discord.Message] = {}
+    async def delete_previous_and_cache(transaction_id: uuid.UUID, message: Optional[discord.Message]):
+        old_message = known_messages.pop(transaction_id, None)
+        if old_message:
+            await old_message.delete(delay=0)
+        if message:
+            known_messages[transaction_id] = message
 
     async def player_event_handler(event: PlayerEvent):
+        message = None
         if event.event_type == PlayerEventType.ENQUEUED:
-            await text_channel.send(f'Added to queue: {event.context.title}', delete_after=30)
+            message = await text_channel.send(f'Added to queue: {event.item.title}')
         elif event.event_type == PlayerEventType.STARTED:
-            await text_channel.send(f'Now playing: {event.context.title}', delete_after=(15 * 60))
+            await text_channel.send(f'Now playing: {event.item.title}')
+        elif event.event_type == PlayerEventType.PLAYBACK_ERROR:
+            await text_channel.send(f'error when trying to play {event.item.title} =(')
+
+        await delete_previous_and_cache(event.transaction_id, message)
 
     async def search_event_handler(event: SearchEvent):
+        message = None
         if event.event_type == SearchEventType.SEARCHING:
-            message = await text_channel.send(f'Searching for "{event.keyword}"', delete_after=30)
-            known_search_messages[event.transaction_id] = message
-            return
+            message = await text_channel.send(f'Searching for "{event.keyword}"')
+        elif event.event_type == SearchEventType.SEARCH_ERROR:
+            await text_channel.send(f'Could not find "{event.keyword}"')
 
-        message = known_search_messages.pop(event.transaction_id, None)
-        if message:
-            await message.delete(delay=0)
+        await delete_previous_and_cache(event.transaction_id, message)
 
-        if event.event_type == SearchEventType.SEARCH_ERROR:
-            await text_channel.send(f'Could not find "{event.keyword}"', delete_after=30)
-
-    async def handler(event: Union[PlayerEvent, SearchEvent]):
+    async def handler(event: BasePlayerEvent):
         log.debug(f'player handler received event: {event}')
         if isinstance(event, PlayerEvent):
             await player_event_handler(event)
-        else:
+        elif isinstance(event, SearchEvent):
             await search_event_handler(event)
+        else:
+            log.warning(f'player handler received unknown event type: {event}')
+
     return handler
 
 
@@ -267,7 +277,7 @@ def create_help_command_executor(commands: Trie) -> CommandExecutor:
         '''lists all commands'''
         if len(command_arg) == 0:
             commands_string = '\n'.join(format_command(aliases, executor) for (executor, aliases) in inverted_commands_map(commands).items())
-            return await channel.send(f'known commands are:\n{commands_string}', delete_after=30)
+            return await channel.send(f'known commands are:\n{commands_string}', delete_after=60)
 
         command_name = command_arg if command_arg.startswith('!') else f'!{command_arg}'
         alias, executor = commands.longest_prefix(command_name)
@@ -288,10 +298,6 @@ def run():
 
 
 def run_debug():
-    log.setLevel(logging.DEBUG)
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
-
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-w', '--wait', action='store_true', default=False)
