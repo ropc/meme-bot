@@ -20,6 +20,7 @@ class Meme(BaseModel):
     image_filename: str
     aliases: List[str]
     plugins: List[BasePlugin]
+    help_string: str
 
     @asynccontextmanager
     async def generate(self, text):

@@ -5,6 +5,7 @@ ALL_MEMES = [
     Meme(
         image_filename='spongebob.jpg',
         aliases=['spongebob', 'sb'],
+        help_string='Usage: !meme spongebob <text>',
         plugins=[
             SpongifyText(plugin_input=UserInput()),
             DrawText(plugin_input=ContextInput(key='spongified-text'), position=AutoPosition.BOTTOM)
@@ -13,6 +14,7 @@ ALL_MEMES = [
     Meme(
         image_filename='mouthfeel.jpg',
         aliases=['mouthfeel'],
+        help_string='Usage: !meme mouthfeel <single word>',
         plugins=[
             TrimText(plugin_input=UserInput(), numwords=1),
             DrawText(plugin_input=UserInput(), position=AutoPosition.BOTTOM, fontsize=72),
@@ -22,6 +24,7 @@ ALL_MEMES = [
     Meme(
         image_filename='change-my-mind.jpg',
         aliases=['change my mind', 'change-my-mind'],
+        help_string='Usage: !meme change my mind <text>',
         plugins=[
             DrawText(plugin_input=UserInput(), position=Coordinate(x=316, y=256),
                 maxwidth=15, fontsize=24, fontcolor='black', hastextoutline=False)
@@ -30,6 +33,7 @@ ALL_MEMES = [
     Meme(
         image_filename='distracted-bf.jpg',
         aliases=['distracted bf', 'distracted-bf'],
+        help_string='Usage: !meme distracted bf <text1> / <text2> / <text3>',
         plugins=[
             SplitText(plugin_input=UserInput(), separator='/'),
             DrawText(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=198, y=310), maxwidth=15, fontsize=48),
@@ -40,6 +44,7 @@ ALL_MEMES = [
     Meme(
         image_filename='brain.jpg',
         aliases=['brain'],
+        help_string='Usage: !meme brain <text1> / <text2> / <text3>',
         plugins=[
             SplitText(plugin_input=UserInput(), separator=' /'),
             StartsWithSelector(
@@ -65,6 +70,7 @@ ALL_MEMES = [
     Meme(
         image_filename='boromir.jpg',
         aliases=['one does not simply', 'simply', 'boromir'],
+        help_string='Usage: !meme one does not simply <text>',
         plugins=[
             DrawText(plugin_input=UserInput(), position=AutoPosition.BOTTOM, fontsize=42),
             DrawText(plugin_input=RawInput(text='One does not simply'), position=AutoPosition.TOP, fontsize=42)

@@ -3,10 +3,11 @@ import random
 import logging
 import discord
 from pydantic import BaseModel
-from pygtrie import CharTrie
-from typing import Dict, List, Callable, Awaitable, Optional, MutableMapping, Tuple, Union
+from pygtrie import CharTrie, Trie
+from functools import wraps
+from typing import Dict, Iterable, Set, Callable, Awaitable, Optional, MutableMapping, Tuple, Union, Mapping
 from ..meme_generator import Meme, ALL_MEMES
-from .command import Command, CommandExecutor
+from .command import Command, CommandExecutor, executor
 from .player import Player, PlayerEvent, PlayerEventType, SearchEvent
 from .guildconfig import GuildConfig, get_guild_config
 
@@ -25,9 +26,10 @@ class PlayerConfig(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+
 class MemeBot(discord.Client):
 
-    def __init__(self, *, known_memes: List[Meme], guild_config: str):
+    def __init__(self, *, known_memes: Iterable[Meme], guild_config: str):
         super().__init__()
         # TODO: consolidate this and MEME_BOT token to a single config
         self.guild_config = guild_config
@@ -42,10 +44,11 @@ class MemeBot(discord.Client):
             for alias in meme.aliases:
                 self.commands[f'!meme {alias}'] = executor
         # meme list
-        aliases = ', '.join(m.aliases[0] for m in known_memes)
-        memelist_command_executor = create_text_response_executor(f'I know these memes: {aliases}')
+        memelist_command_executor = create_memelist_command_executor(known_memes)
         self.commands['!meme list'] = memelist_command_executor
         self.commands['!memelist'] = memelist_command_executor
+
+        # dice roll
         self.commands['!r'] = roll_dice
         self.commands['!roll'] = roll_dice
 
@@ -53,6 +56,9 @@ class MemeBot(discord.Client):
         self.commands['!play'] = create_play_executor(self.guild_player_config.get)
         self.commands['!skip'] = create_skip_executor(self.guild_player_config.get)
         self.commands['!queue'] = create_show_queue_executor(self.guild_player_config.get)
+
+        # help
+        self.commands['!help'] = create_help_command_executor(self.commands)
 
     async def on_ready(self):
         log.info(f'We have logged in as {self.user}')
@@ -122,6 +128,8 @@ def ignore_by_player_config_provider(player_config_provider: PlayerConfigProvide
             is received in the allowed channel
     """
     def wrapper(func: PlayerCommandExecutor):
+        @executor()
+        @wraps(func)
         def wrapped(command_arg: str, channel: discord.TextChannel):
             config = player_config_provider(channel.guild.id)
             if not config:
@@ -138,6 +146,7 @@ def ignore_by_player_config_provider(player_config_provider: PlayerConfigProvide
 def create_play_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @ignore_by_player_config_provider(player_config_provider)
     async def play(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+        '''search for a song and add to queue'''
         await player_config.player.enqueue(command_arg)
     return play
 
@@ -145,6 +154,7 @@ def create_play_executor(player_config_provider: PlayerConfigProvider) -> Comman
 def create_skip_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @ignore_by_player_config_provider(player_config_provider)
     async def skip(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+        '''skips current song, if one is playing'''
         await player_config.player.skip()
     return skip
 
@@ -152,8 +162,11 @@ def create_skip_executor(player_config_provider: PlayerConfigProvider) -> Comman
 def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @ignore_by_player_config_provider(player_config_provider)
     async def show_queue(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+        '''shows current queue'''
+        if len(player_config.player.playback_queue) == 0:
+            return await channel.send('Nothing in queue. Add a song with !play')
         queue = '\n'.join(f'- {item.title}' for item in player_config.player.playback_queue)
-        await channel.send(f'Up next:\n{queue}')
+        return await channel.send(f'Up next:\n{queue}')
     return show_queue
 
 
@@ -177,6 +190,7 @@ def create_player_event_handler(text_channel: discord.TextChannel):
 
 
 def create_meme_executor(meme_generator: Meme) -> CommandExecutor:
+    @executor(help_string=meme_generator.help_string)
     async def run_meme(command_arg: str, channel: discord.abc.Messageable):
         async with meme_generator.generate(command_arg) as meme_image:
             df = discord.File(meme_image, filename=meme_generator.image_filename)
@@ -184,13 +198,18 @@ def create_meme_executor(meme_generator: Meme) -> CommandExecutor:
     return run_meme
 
 
-def create_text_response_executor(text: str) -> CommandExecutor:
-    async def send_text(command_arg: str, channel: discord.abc.Messageable):
-        return await channel.send(text)
-    return send_text
+def create_memelist_command_executor(memes: Iterable[Meme]) -> CommandExecutor:
+    aliases = ', '.join(m.aliases[0] for m in memes)
+    @executor()
+    async def send_memelist(command_arg: str, channel: discord.abc.Messageable):
+        '''lists all known memes'''
+        return await channel.send(f'I know these memes: {aliases}')
+    return send_memelist
 
 
+@executor()
 async def roll_dice(command_arg: str, channel: discord.abc.Messageable):
+    '''rolls dice. Example: !roll 5d6'''
     num_dice, num_sides = [int(x if x else 1) for x in command_arg.split('d')]
 
     # soft limit. (2k - 16) hardcoded characters in message
@@ -210,6 +229,40 @@ async def roll_dice(command_arg: str, channel: discord.abc.Messageable):
         return await channel.send("I don't have all those dice")
 
     return await channel.send(message)
+
+
+def create_help_command_executor(commands: Trie) -> CommandExecutor:
+    def format_command(aliases: Iterable[str], executor: CommandExecutor):
+        formatted_aliases = ', '.join(aliases)
+        return f'{formatted_aliases} - {executor.help_string()}'
+
+    def inverted_commands_map(commands: Mapping[str, CommandExecutor]) -> Mapping[CommandExecutor, Iterable[str]]:
+        '''assumes executors for each command are reused'''
+        inverted_map: MutableMapping[CommandExecutor, Set[str]] = {}
+        for (key, item) in commands.items():
+            alias_set = inverted_map.get(item, set())
+            alias_set.add(key)
+            inverted_map[item] = alias_set
+        return inverted_map
+
+    @executor()
+    async def help_command(command_arg: str, channel: discord.abc.Messageable):
+        '''lists all commands'''
+        if len(command_arg) == 0:
+            commands_string = '\n'.join(format_command(aliases, executor) for (executor, aliases) in inverted_commands_map(commands).items())
+            return await channel.send(f'known commands are:\n{commands_string}')
+
+        command_name = command_arg if command_arg.startswith('!') else f'!{command_arg}'
+        alias, executor = commands.longest_prefix(command_name)
+
+        # maybe the user didn't include '!meme'
+        if not alias or not executor:
+            alias, executor = commands.longest_prefix(f'!meme {command_name[1:]}')
+
+        if not alias or not executor:
+            return await channel.send(f"i don't know the command '{command_name}'")
+        return await channel.send(format_command([alias], executor))
+    return help_command
 
 
 def run():
