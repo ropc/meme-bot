@@ -106,11 +106,11 @@ class Player:
             log.debug(f'nothing in queue for voice_channel: {self.voice_channel}')
             return
 
-        log.debug(f'play next voice_client: {self.voice_client} voice_channel: {self.voice_channel}')
-        self.voice_client = self.voice_client or await self.voice_channel.connect()
-
         item = self.playback_queue.popleft()
         self._download(item)
+
+        log.debug(f'play next voice_client: {self.voice_client} voice_channel: {self.voice_channel}')
+        self.voice_client = self.voice_client or await self.voice_channel.connect()
 
         log.info(f'gonna play {item.title} from {item.url}')
         self.voice_client.play(discord.FFmpegPCMAudio(item.filepath), after=self._create_after(item))
@@ -165,7 +165,7 @@ class Player:
             log.debug(f'already downloaded {item.filepath}')
             return
         with yt.YoutubeDL(yt_opts) as ytdl:
-            ytdl.download([item.url])
+            self.loop.run_in_executor(None, ytdl.download, [item.url])
 
 
     async def _search(self, keyword: str, transaction_id: uuid.UUID) -> Optional[str]:
