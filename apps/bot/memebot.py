@@ -1,4 +1,5 @@
 import os
+import asyncio
 import random
 import logging
 import discord
@@ -9,7 +10,7 @@ from functools import wraps
 from typing import Dict, Iterable, Set, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping
 from ..meme_generator import Meme, ALL_MEMES
 from .command import Command, CommandExecutor, executor
-from .player import Player, PlayerEvent, PlayerEventType, SearchEvent, SearchEventType, BasePlayerEvent
+from .player import Player, PlayerEvent, PlayerEventType, SearchEvent, SearchEventType, PlayerDelegate
 from .guildconfig import GuildConfig, get_guild_config
 
 logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
@@ -102,10 +103,8 @@ class MemeBot(discord.Client):
                 log.warning(f'could not get voice/text channels for guild {guild.id}. GuildConfig: {config}')
                 continue
 
-            log.debug(f'connecting to voice channel: {voice_channel.id}')
-            voice_client: discord.VoiceClient = await voice_channel.connect()
-
-            player = Player(voice_client=voice_client, on_event_cb=create_player_event_handler(text_channel))
+            log.debug(f'creating player for voice_channel: {voice_channel} text_channel: {text_channel}')
+            player = Player(voice_channel=voice_channel, delegate=create_player_event_handler(text_channel))
 
             self.guild_player_config[guild.id] = PlayerConfig(
                 player=player,
@@ -159,7 +158,10 @@ def create_skip_executor(player_config_provider: PlayerConfigProvider) -> Comman
     @ignore_by_player_config_provider(player_config_provider)
     async def skip(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
         '''skips current song, if one is playing'''
-        await player_config.player.skip()
+        await asyncio.gather(
+            player_config.player.skip(),
+            channel.send('Skipping...', delete_after=60)
+        )
     return skip
 
 
@@ -184,36 +186,30 @@ def create_player_event_handler(text_channel: discord.TextChannel):
         if message:
             known_messages[transaction_id] = message
 
-    async def player_event_handler(event: PlayerEvent):
-        message = None
-        if event.event_type == PlayerEventType.ENQUEUED:
-            message = await text_channel.send(f'Added to queue: {event.item.title}')
-        elif event.event_type == PlayerEventType.STARTED:
-            await text_channel.send(f'Now playing: {event.item.title}')
-        elif event.event_type == PlayerEventType.PLAYBACK_ERROR:
-            await text_channel.send(f'error when trying to play {event.item.title} =(')
+    class _Handler(PlayerDelegate):
+        async def player_event(self, player: Player, event: PlayerEvent):
+            log.debug(f'received player event {event} from {player}')
+            message = None
+            if event.event_type == PlayerEventType.ENQUEUED:
+                message = await text_channel.send(f'Added to queue: {event.item.title}')
+            elif event.event_type == PlayerEventType.STARTED:
+                await text_channel.send(f'Now playing: {event.item.title}')
+            elif event.event_type == PlayerEventType.PLAYBACK_ERROR:
+                await text_channel.send(f'error when trying to play {event.item.title} =(')
 
-        await delete_previous_and_cache(event.transaction_id, message)
+            await delete_previous_and_cache(event.transaction_id, message)
 
-    async def search_event_handler(event: SearchEvent):
-        message = None
-        if event.event_type == SearchEventType.SEARCHING:
-            message = await text_channel.send(f'Searching for "{event.keyword}"')
-        elif event.event_type == SearchEventType.SEARCH_ERROR:
-            await text_channel.send(f'Could not find "{event.keyword}"')
+        async def search_event(self, player: Player,event: SearchEvent):
+            log.debug(f'received search event {event} from {player}')
+            message = None
+            if event.event_type == SearchEventType.SEARCHING:
+                message = await text_channel.send(f'Searching for "{event.keyword}"')
+            elif event.event_type == SearchEventType.SEARCH_ERROR:
+                await text_channel.send(f'Could not find "{event.keyword}"')
 
-        await delete_previous_and_cache(event.transaction_id, message)
+            await delete_previous_and_cache(event.transaction_id, message)
 
-    async def handler(event: BasePlayerEvent):
-        log.debug(f'player handler received event: {event}')
-        if isinstance(event, PlayerEvent):
-            await player_event_handler(event)
-        elif isinstance(event, SearchEvent):
-            await search_event_handler(event)
-        else:
-            log.warning(f'player handler received unknown event type: {event}')
-
-    return handler
+    return _Handler()
 
 
 def create_meme_executor(meme_generator: Meme) -> CommandExecutor:

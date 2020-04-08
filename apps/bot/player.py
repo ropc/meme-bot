@@ -49,6 +49,7 @@ class PlayerEvent(BaseModel):
         return self.item.transaction_id
 
 
+# TODO: Figure out how to merge this into PlayerEventType
 class SearchEventType(enum.Enum):
     SEARCHING = 1
     SEARCH_ERROR = 3
@@ -60,16 +61,21 @@ class SearchEvent(BaseModel):
     transaction_id: uuid.UUID
 
 
-BasePlayerEvent = Union[PlayerEventType, SearchEvent]
-
-PlayerEventCallback = Callable[[Union[PlayerEvent, SearchEvent]], Awaitable[None]]
+class PlayerDelegate(abc.ABC):
+    @abc.abstractmethod
+    async def player_event(self, player: 'Player', event: PlayerEvent):
+        pass
+    @abc.abstractmethod
+    async def search_event(self, player: 'Player', event: SearchEvent):
+        pass
 
 
 class Player:
 
-    def __init__(self, voice_client: discord.VoiceClient, on_event_cb: PlayerEventCallback):
-        self.voice_client = voice_client
-        self.on_event_cb = on_event_cb
+    def __init__(self, voice_channel: discord.VoiceChannel, delegate: PlayerDelegate):
+        self.voice_channel = voice_channel
+        self.delegate = delegate
+        self.voice_client: Optional[discord.VoiceClient] = None
         self.playback_queue: Deque[PlaybackItem] = collections.deque()
         self.queue_lock = asyncio.Lock()
         self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
@@ -83,38 +89,56 @@ class Player:
             item = await self._get_item(url, transaction_id)
             self.playback_queue.append(item)
 
-        await self.on_event_cb(PlayerEvent(event_type=PlayerEventType.ENQUEUED, item=item))
+        await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEventType.ENQUEUED, item=item))
 
         self._download(item)
 
-        if not self.voice_client.is_playing():
+        if not self.voice_client or not self.voice_client.is_playing():
             await self._play_next()
 
     async def skip(self):
+        log.debug(f'skipping current song (if any) on {self.voice_channel}')
         self.voice_client.stop()
         await self._play_next()
 
     async def _play_next(self):
         if len(self.playback_queue) == 0:
-            log.debug('nothing to play in playback_queue')
+            log.debug(f'nothing in queue for voice_channel: {self.voice_channel}')
             return
+
+        log.debug(f'play next voice_client: {self.voice_client} voice_channel: {self.voice_channel}')
+        self.voice_client = self.voice_client or await self.voice_channel.connect()
 
         item = self.playback_queue.popleft()
         self._download(item)
 
-        log.info(f"gonna play {item.title} from {item.url}")
+        log.info(f'gonna play {item.title} from {item.url}')
         self.voice_client.play(discord.FFmpegPCMAudio(item.filepath), after=self._create_after(item))
-        await self.on_event_cb(PlayerEvent(event_type=PlayerEventType.STARTED, item=item))
+        await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEventType.STARTED, item=item))
     
     def _create_after(self, item: PlaybackItem):
+        async def try_disconnect():
+            if len(self.playback_queue) > 0 or self.voice_client is None or self.voice_client.is_playing():
+                log.debug(f'no need to disconnect. playback_queue: {self.playback_queue} voice_client: {self.voice_client}')
+                return
+            log.debug(f'disconnecting voice_client: {self.voice_client} (voice_channel: {self.voice_channel})')
+            await self.voice_client.disconnect()
+            self.voice_client = None
+
         async def after(error):
             event_type = PlayerEventType.PLAYBACK_ERROR if error else PlayerEventType.FINISHED
+            was_last_item = len(self.playback_queue) == 0
+            log.debug(f'finished playback. event_type: {event_type} was_last_item: {was_last_item}')
             await asyncio.gather(
-                self.on_event_cb(PlayerEvent(event_type=event_type, item=item)),
+                self.delegate.player_event(self, PlayerEvent(event_type=event_type, item=item)),
                 self._play_next()
             )
             if os.path.isfile(item.filepath):
                 os.remove(item.filepath)
+            if was_last_item:
+                await asyncio.sleep(5 * 60)
+                await try_disconnect()
+
         return lambda error: self.loop.create_task(after(error))
 
     async def _get_item(self, url: str, transaction_id: uuid.UUID) -> PlaybackItem:
@@ -148,11 +172,11 @@ class Player:
         '''Searches for keyword and emits `SearchEvent`s'''
         result, _ = await asyncio.gather(
             _find_url(keyword),
-            self.on_event_cb(SearchEvent(event_type=SearchEventType.SEARCHING, keyword=keyword, transaction_id=transaction_id))
+            self.delegate.search_event(self, SearchEvent(event_type=SearchEventType.SEARCHING, keyword=keyword, transaction_id=transaction_id))
         )
 
         if not result:
-            await self.on_event_cb(SearchEvent(event_type=SearchEventType.SEARCH_ERROR, keyword=keyword, transaction_id=transaction_id))
+            await self.delegate.search_event(self, SearchEvent(event_type=SearchEventType.SEARCH_ERROR, keyword=keyword, transaction_id=transaction_id))
             return None
 
         return result
@@ -197,4 +221,4 @@ async def _find_url_api(keyword: str) -> Optional[str]:
 
 
 async def _find_url(keyword: str) -> Optional[str]:
-    return await _find_url_scrape(keyword)
+    return await _find_url_scrape(keyword) or await _find_url_api(keyword)
