@@ -196,6 +196,8 @@ def create_player_event_handler(text_channel: discord.TextChannel):
                 await text_channel.send(f'Now playing: {event.item.title}')
             elif event.event_type == PlayerEventType.PLAYBACK_ERROR:
                 await text_channel.send(f'error when trying to play {event.item.title} =(')
+            elif event.event_type == PlayerEventType.DOWNLOAD_ERROR:
+                await text_channel.send(f'error when trying to download {event.item.title} =(')
 
             await delete_previous_and_cache(event.transaction_id, message)
 

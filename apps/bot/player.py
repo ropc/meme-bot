@@ -38,6 +38,7 @@ class PlayerEventType(enum.Enum):
     STARTED = 2
     FINISHED = 3
     PLAYBACK_ERROR = 4
+    DOWNLOAD_ERROR = 5
 
 
 class PlayerEvent(BaseModel):
@@ -91,7 +92,7 @@ class Player:
 
         await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEventType.ENQUEUED, item=item))
 
-        self._download(item)
+        await self._download(item)
 
         if not self.voice_client or not self.voice_client.is_playing():
             await self._play_next()
@@ -107,7 +108,7 @@ class Player:
             return
 
         item = self.playback_queue.popleft()
-        self._download(item)
+        await self._download(item)
 
         log.debug(f'play next voice_client: {self.voice_client} voice_channel: {self.voice_channel}')
         self.voice_client = self.voice_client or await self.voice_channel.connect()
@@ -145,7 +146,7 @@ class Player:
         with yt.YoutubeDL(yt_opts) as ytdl:
             info = ytdl.extract_info(url, download=False)
             filepath = ytdl.prepare_filename(info)
-            log.debug(f'info for {url}: {info}')
+            log.debug(f'got info for {url}')
             return PlaybackItem(
                 title=info['title'],
                 url=url,
@@ -153,7 +154,7 @@ class Player:
                 download_url=info['url'],
                 transaction_id=transaction_id)
 
-    def _download(self, item: PlaybackItem):
+    async def _download(self, item: PlaybackItem):
         """Download video for given url or item
 
         This call is idempotent per item.filepath
@@ -161,11 +162,21 @@ class Player:
         Arguments:
             item {PlaybackItem} -- item to download
         """
+        def download_notify_error(ytdl):
+            try:
+                ytdl.download([item.url])
+            except KeyboardInterrupt:
+                raise
+            except:
+                self.delegate.player_event(self, PlayerEvent(event_type=PlayerEventType.DOWNLOAD_ERROR, item=item))
+
         if os.path.isfile(item.filepath):
             log.debug(f'already downloaded {item.filepath}')
             return
+
         with yt.YoutubeDL(yt_opts) as ytdl:
-            self.loop.run_in_executor(None, ytdl.download, [item.url])
+            # need to run_in_executor to prevent blocking
+            await self.loop.run_in_executor(None, download_notify_error, ytdl)
 
 
     async def _search(self, keyword: str, transaction_id: uuid.UUID) -> Optional[str]:
