@@ -102,6 +102,12 @@ class Player:
         self.voice_client.stop()
         await self._play_next()
 
+    async def _connected_voice_client(self):
+        if not self.voice_client or not self.voice_client.is_connected():
+            log.debug(f'creating new voice client for {self.voice_channel}')
+            self.voice_client = await self.voice_channel.connect()
+        return self.voice_client
+
     async def _play_next(self):
         if len(self.playback_queue) == 0:
             log.debug(f'nothing in queue for voice_channel: {self.voice_channel}')
@@ -110,11 +116,10 @@ class Player:
         item = self.playback_queue.popleft()
         await self._download(item)
 
-        log.debug(f'play next voice_client: {self.voice_client} voice_channel: {self.voice_channel}')
-        self.voice_client = self.voice_client or await self.voice_channel.connect()
+        voice_client = await self._connected_voice_client()
 
         log.info(f'gonna play {item.title} from {item.url}')
-        self.voice_client.play(discord.FFmpegPCMAudio(item.filepath), after=self._create_after(item))
+        voice_client.play(discord.FFmpegPCMAudio(item.filepath), after=self._create_after(item))
         await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEventType.STARTED, item=item))
     
     def _create_after(self, item: PlaybackItem):
@@ -134,6 +139,7 @@ class Player:
                 self.delegate.player_event(self, PlayerEvent(event_type=event_type, item=item)),
                 self._play_next()
             )
+            # technically, this could be replayed. either now or in the future.
             if os.path.isfile(item.filepath):
                 os.remove(item.filepath)
             if was_last_item:
