@@ -1,5 +1,6 @@
-from .plugins import DrawText, TrimText, SpongifyText, AutoPosition, Coordinate, SplitText, StartsWithSelector, DrawImage, UserInput, RawInput, ContextInput
-from .meme import Meme
+from plugins import DrawText, TrimText, SpongifyText, AutoPosition, Coordinate, SplitText, StartsWithSelector, DrawImage, UserInput, RawInput, ContextInput
+from meme import Meme
+
 
 ALL_MEMES = [
     Meme(

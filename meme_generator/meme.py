@@ -7,11 +7,11 @@ from contextlib import asynccontextmanager
 from typing import List, AsyncContextManager
 from pathlib import Path
 from PIL import Image
-from .plugins import BasePlugin, USER_INPUT_KEY
+from plugins import BasePlugin, USER_INPUT_KEY
 
-# this will be something like ../meme-bot/src/memes
+# this will be something like ../memebot/meme_generator
 module_path = os.path.dirname(os.path.abspath(__file__))
-package_root_dir = str(Path(module_path).parents[1])
+package_root_dir = str(Path(module_path).parents[0])
 
 log = logging.getLogger('memebot')
 
@@ -36,7 +36,6 @@ class Meme(BaseModel):
             image.save(meme_file, format=image.format)
 
         meme_file.seek(0)  # reset offset so that file can be read from the start
-
         try:
             yield meme_file
         finally:

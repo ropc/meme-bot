@@ -1,15 +1,16 @@
 [tool.poetry]
-name = "meme-bot"
+name = "memebot"
 version = "0.1.0"
 description = ""
 authors = ["ropc <itslikeroar2412@gmail.com>"]
 packages = [
-    { include = "apps" }
+    { include = "memebot" },
+    { include = "meme_generator" },
 ]
 
 [tool.poetry.scripts]
-bot = "apps.bot.memebot:run"
-bot-debug = "apps.bot.memebot:run_debug"
+bot = "memebot.memebot:run"
+bot-debug = "memebot.memebot:run_debug"
 
 [tool.poetry.dependencies]
 python = "^3.7"

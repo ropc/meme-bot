@@ -8,10 +8,10 @@ from pydantic import BaseModel
 from pygtrie import CharTrie, Trie
 from functools import wraps
 from typing import Dict, Iterable, Set, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping
-from ..meme_generator import Meme, ALL_MEMES
-from .command import Command, CommandExecutor, executor
-from .player import Player, PlayerEvent, PlayerEventType, SearchEvent, SearchEventType, PlayerDelegate
-from .guildconfig import GuildConfig, get_guild_config
+from meme_generator import Meme, ALL_MEMES
+from command import Command, CommandExecutor, executor
+from player import Player, PlayerEvent, PlayerEventType, SearchEvent, SearchEventType, PlayerDelegate
+from guildconfig import GuildConfig, get_guild_config
 
 logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
 

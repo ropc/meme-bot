@@ -12,7 +12,7 @@ import uuid
 import urllib.parse
 import lxml.html
 from pydantic import BaseModel
-from typing import Dict, Deque, Callable, Awaitable, Union, Optional
+from typing import Dict, Deque, Callable, Awaitable, Union, Optional, TypeVar
 
 
 log = logging.getLogger('memebot')
@@ -71,49 +71,59 @@ class PlayerDelegate(abc.ABC):
         pass
 
 
+T = TypeVar('T')
+Supplier = Callable[[], T]
+
+
 class Player:
 
-    def __init__(self, voice_channel: discord.VoiceChannel, delegate: PlayerDelegate):
+    def __init__(self, *, voice_channel: discord.VoiceChannel, delegate: PlayerDelegate,
+        voice_client: Optional[discord.VoiceClient]=None, queue_supplier: Supplier[Deque[PlaybackItem]]=collections.deque,
+        lock_supplier: Supplier[asyncio.Lock]=asyncio.Lock, loop_supplier: Supplier[asyncio.AbstractEventLoop]=asyncio.get_event_loop):
         self.voice_channel = voice_channel
         self.delegate = delegate
-        self.voice_client: Optional[discord.VoiceClient] = None
-        self.playback_queue: Deque[PlaybackItem] = collections.deque()
-        self.queue_lock = asyncio.Lock()
-        self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+        self._voice_client: Optional[discord.VoiceClient] = voice_client
+        self._playback_queue: Deque[PlaybackItem] = queue_supplier()
+        self._queue_lock: asyncio.Lock = lock_supplier()
+        self._loop: asyncio.AbstractEventLoop = loop_supplier()
+
+    @property
+    def playback_queue(self):
+        return self._playback_queue.copy()
 
     async def enqueue(self, text: str):
         transaction_id = uuid.uuid4()
-        async with self.queue_lock:
+        async with self._queue_lock:
             url = text if text.startswith('http') else await self._search(text, transaction_id)
             if not url:
                 return
             item = await self._get_item(url, transaction_id)
-            self.playback_queue.append(item)
+            self._playback_queue.append(item)
 
         await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEventType.ENQUEUED, item=item))
 
         await self._download(item)
 
-        if not self.voice_client or not self.voice_client.is_playing():
+        if not self._voice_client or not self._voice_client.is_playing():
             await self._play_next()
 
     async def skip(self):
         log.debug(f'skipping current song (if any) on {self.voice_channel}')
-        self.voice_client.stop()
+        self._voice_client.stop()
         await self._play_next()
 
     async def _connected_voice_client(self):
-        if not self.voice_client or not self.voice_client.is_connected():
+        if not self._voice_client or not self._voice_client.is_connected():
             log.debug(f'creating new voice client for {self.voice_channel}')
-            self.voice_client = await self.voice_channel.connect()
-        return self.voice_client
+            self._voice_client = await self.voice_channel.connect()
+        return self._voice_client
 
     async def _play_next(self):
-        if len(self.playback_queue) == 0:
+        if len(self._playback_queue) == 0:
             log.debug(f'nothing in queue for voice_channel: {self.voice_channel}')
             return
 
-        item = self.playback_queue.popleft()
+        item = self._playback_queue.popleft()
         await self._download(item)
 
         voice_client = await self._connected_voice_client()
@@ -124,16 +134,16 @@ class Player:
     
     def _create_after(self, item: PlaybackItem):
         async def try_disconnect():
-            if len(self.playback_queue) > 0 or self.voice_client is None or self.voice_client.is_playing():
-                log.debug(f'no need to disconnect. playback_queue: {self.playback_queue} voice_client: {self.voice_client}')
+            if len(self._playback_queue) > 0 or self._voice_client is None or self._voice_client.is_playing():
+                log.debug(f'no need to disconnect. playback_queue: {self._playback_queue} voice_client: {self._voice_client}')
                 return
-            log.debug(f'disconnecting voice_client: {self.voice_client} (voice_channel: {self.voice_channel})')
-            await self.voice_client.disconnect()
-            self.voice_client = None
+            log.debug(f'disconnecting voice_client: {self._voice_client} (voice_channel: {self.voice_channel})')
+            await self._voice_client.disconnect()
+            self._voice_client = None
 
         async def after(error):
             event_type = PlayerEventType.PLAYBACK_ERROR if error else PlayerEventType.FINISHED
-            was_last_item = len(self.playback_queue) == 0
+            was_last_item = len(self._playback_queue) == 0
             log.debug(f'finished playback. event_type: {event_type} was_last_item: {was_last_item}')
             await asyncio.gather(
                 self.delegate.player_event(self, PlayerEvent(event_type=event_type, item=item)),
@@ -146,7 +156,7 @@ class Player:
                 await asyncio.sleep(5 * 60)
                 await try_disconnect()
 
-        return lambda error: self.loop.create_task(after(error))
+        return lambda error: self._loop.create_task(after(error))
 
     async def _get_item(self, url: str, transaction_id: uuid.UUID) -> PlaybackItem:
         with yt.YoutubeDL(yt_opts) as ytdl:
@@ -182,7 +192,7 @@ class Player:
 
         with yt.YoutubeDL(yt_opts) as ytdl:
             # need to run_in_executor to prevent blocking
-            await self.loop.run_in_executor(None, download_notify_error, ytdl)
+            await self._loop.run_in_executor(None, download_notify_error, ytdl)
 
 
     async def _search(self, keyword: str, transaction_id: uuid.UUID) -> Optional[str]:
