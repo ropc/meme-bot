@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from typing import List, AsyncContextManager
 from pathlib import Path
 from PIL import Image
-from plugins import BasePlugin, USER_INPUT_KEY
+from .plugins import BasePlugin, USER_INPUT_KEY
 
 # this will be something like ../memebot/meme_generator
 module_path = os.path.dirname(os.path.abspath(__file__))

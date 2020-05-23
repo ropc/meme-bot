@@ -9,9 +9,9 @@ from pygtrie import CharTrie, Trie
 from functools import wraps
 from typing import Dict, Iterable, Set, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping
 from meme_generator import Meme, ALL_MEMES
-from command import Command, CommandExecutor, executor
-from player import Player, PlayerEvent, PlayerEventType, SearchEvent, SearchEventType, PlayerDelegate
-from guildconfig import GuildConfig, get_guild_config
+from .command import Command, CommandExecutor, executor
+from .player import Player, PlayerABC, PlayerEvent, SearchEvent, PlayerDelegate
+from .guildconfig import GuildConfig, get_guild_config
 
 logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
 
@@ -187,26 +187,26 @@ def create_player_event_handler(text_channel: discord.TextChannel):
             known_messages[transaction_id] = message
 
     class _Handler(PlayerDelegate):
-        async def player_event(self, player: Player, event: PlayerEvent):
+        async def player_event(self, player: PlayerABC, event: PlayerEvent):
             log.debug(f'received player event {event} from {player}')
             message = None
-            if event.event_type == PlayerEventType.ENQUEUED:
+            if event.event_type == PlayerEvent.Type.ENQUEUED:
                 message = await text_channel.send(f'Added to queue: {event.item.title}')
-            elif event.event_type == PlayerEventType.STARTED:
+            elif event.event_type == PlayerEvent.Type.STARTED:
                 await text_channel.send(f'Now playing: {event.item.title}')
-            elif event.event_type == PlayerEventType.PLAYBACK_ERROR:
+            elif event.event_type == PlayerEvent.Type.PLAYBACK_ERROR:
                 await text_channel.send(f'error when trying to play {event.item.title} =(')
-            elif event.event_type == PlayerEventType.DOWNLOAD_ERROR:
+            elif event.event_type == PlayerEvent.Type.DOWNLOAD_ERROR:
                 await text_channel.send(f'error when trying to download {event.item.title} =(')
 
             await delete_previous_and_cache(event.transaction_id, message)
 
-        async def search_event(self, player: Player,event: SearchEvent):
+        async def search_event(self, player: PlayerABC,event: SearchEvent):
             log.debug(f'received search event {event} from {player}')
             message = None
-            if event.event_type == SearchEventType.SEARCHING:
+            if event.event_type == SearchEvent.Type.SEARCHING:
                 message = await text_channel.send(f'Searching for "{event.keyword}"')
-            elif event.event_type == SearchEventType.SEARCH_ERROR:
+            elif event.event_type == SearchEvent.Type.SEARCH_ERROR:
                 await text_channel.send(f'Could not find "{event.keyword}"')
 
             await delete_previous_and_cache(event.transaction_id, message)
