@@ -68,7 +68,7 @@ class MemeBot(discord.Client):
 
     async def on_message(self, message: discord.Message):
         log.info(f'received message from {message.author.name}')
-        if message.author == self.user:
+        if message.author.bot:
             return
 
         command = self.parse_message(message.content)
@@ -128,6 +128,7 @@ def ignore_by_player_config_provider(player_config_provider: PlayerConfigProvide
             is received in the allowed channel
     """
     async def no_op_awaitable():
+        # TODO: better feedback
         pass
 
     def wrapper(func: PlayerCommandExecutor):

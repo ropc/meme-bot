@@ -16,7 +16,8 @@ YOUTUBE_SEARCH_URL = 'https://www.googleapis.com/youtube/v3/search'
 
 yt_opts = {
     'format': 'bestaudio/best',
-    'outtmpl': '/tmp/%(id)s.%(ext)s'
+    'outtmpl': '/tmp/%(id)s.%(ext)s',
+    'verbose': True,
 }
 
 

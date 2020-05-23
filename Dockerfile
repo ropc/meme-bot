@@ -1,7 +1,7 @@
-FROM python:3
+FROM python:3.8
 
 RUN apt-get update && apt-get install -y ffmpeg
-RUN pip install poetry==1.0.3
+RUN pip install poetry==1.0.5
 COPY . /tmp/meme-bot
 COPY fonts/* /usr/share/fonts/truetype/
 WORKDIR /tmp/meme-bot
