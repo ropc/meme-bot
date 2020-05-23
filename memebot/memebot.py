@@ -5,6 +5,7 @@ import random
 import logging
 import discord
 import uuid
+import matplotlib
 import matplotlib.pyplot as plt
 from pydantic import BaseModel
 from pygtrie import CharTrie, Trie
@@ -308,11 +309,19 @@ async def chat_stats(command_arg: str, channel: discord.TextChannel):
 
         with plt.xkcd():
             fig, axs = plt.subplots()  # type: plt.Figure, plt.Axes
-            names = list(counts.keys())
+
+            # no need to plot zeros
+            names = list(key for (key, value) in counts.items() if value > 0)
             values = [counts[n] for n in names]
 
             axs.bar(names, values)
             axs.set_title(f'Number of messages in #{channel.name}')
+
+            # formatting
+            for label in axs.get_xticklabels():  # type: matplotlib.text.Text
+                label.set_rotation(45)
+                label.set_horizontalalignment('right')
+            fig.tight_layout()
 
             buffer = io.BytesIO()
             fig.savefig(buffer, format='png')
