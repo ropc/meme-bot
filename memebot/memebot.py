@@ -1,9 +1,11 @@
 import os
+import io
 import asyncio
 import random
 import logging
 import discord
 import uuid
+import matplotlib.pyplot as plt
 from pydantic import BaseModel
 from pygtrie import CharTrie, Trie
 from functools import wraps
@@ -58,6 +60,10 @@ class MemeBot(discord.Client):
         self.commands['!play'] = create_play_executor(self.guild_player_config.get)
         self.commands['!skip'] = create_skip_executor(self.guild_player_config.get)
         self.commands['!queue'] = create_show_queue_executor(self.guild_player_config.get)
+
+        # chat stats
+        self.commands['!chatstats'] = chat_stats
+        self.commands['!chat stats'] = chat_stats
 
         # help
         self.commands['!help'] = create_help_command_executor(self.commands)
@@ -289,6 +295,30 @@ def create_help_command_executor(commands: Trie) -> CommandExecutor:
             return await channel.send(f"i don't know the command '{command_name}'", delete_after=30)
         return await channel.send(format_command([alias], executor), delete_after=30)
     return help_command
+
+
+@executor()
+async def chat_stats(command_arg: str, channel: discord.TextChannel):
+    '''Display stats for this channel'''
+    counts: Dict[str, int] = {}
+
+    async with channel.typing():  # at least give some level of feedback
+        async for message in channel.history(limit=None).filter(lambda m: not m.author.bot):  #type: discord.Message
+            counts[message.author.display_name] = counts.get(message.author.display_name, 0) + 1
+
+        with plt.xkcd():
+            fig, axs = plt.subplots()  # type: plt.Figure, plt.Axes
+            names = list(counts.keys())
+            values = [counts[n] for n in names]
+
+            axs.bar(names, values)
+            axs.set_title(f'Number of messages in #{channel.name}')
+
+            buffer = io.BytesIO()
+            fig.savefig(buffer, format='png')
+            buffer.seek(0)
+
+        await channel.send(file=discord.File(buffer, filename='chatstats.png'))
 
 
 def run():
