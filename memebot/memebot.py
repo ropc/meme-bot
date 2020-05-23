@@ -6,6 +6,7 @@ import logging
 import discord
 import uuid
 import matplotlib
+import datetime
 import matplotlib.pyplot as plt
 from pydantic import BaseModel
 from pygtrie import CharTrie, Trie
@@ -300,22 +301,38 @@ def create_help_command_executor(commands: Trie) -> CommandExecutor:
 
 @executor()
 async def chat_stats(command_arg: str, channel: discord.TextChannel):
-    '''Display stats for this channel'''
-    counts: Dict[str, int] = {}
+    '''Display stats for this channel. Optionally given # days back. Will look only look at most 10k messages
+    Example: !chatstats 10 -> chat stats for the last 10 days
+    '''
+    def parse_days_back(arg: str) -> Optional[datetime.datetime]:
+        if len(arg) == 0:
+            return None
+        try:
+            days = int(arg)
+        except ValueError:
+            return None
+        return datetime.datetime.now() - datetime.timedelta(days=days)
 
     async with channel.typing():  # at least give some level of feedback
-        async for message in channel.history(limit=None).filter(lambda m: not m.author.bot):  #type: discord.Message
+        counts: Dict[str, int] = {}
+
+        days_back = parse_days_back(command_arg)
+
+        async for message in channel.history(limit=10_000, after=days_back, oldest_first=False).filter(lambda m: not m.author.bot):  #type: discord.Message
             counts[message.author.display_name] = counts.get(message.author.display_name, 0) + 1
 
         with plt.xkcd():
             fig, axs = plt.subplots()  # type: plt.Figure, plt.Axes
-
             # no need to plot zeros
-            names = list(key for (key, value) in counts.items() if value > 0)
+            names = sorted((key for (key, value) in counts.items() if value > 0), key=lambda x: len(x))
             values = [counts[n] for n in names]
 
             axs.bar(names, values)
-            axs.set_title(f'Number of messages in #{channel.name}')
+            title = f'Number of messages in #{channel.name}'
+            if days_back:
+                axs.set_title(title + f'\nsince {days_back:%Y-%m-%d}')
+            else:
+                axs.set_title(title)
 
             # formatting
             for label in axs.get_xticklabels():  # type: matplotlib.text.Text
