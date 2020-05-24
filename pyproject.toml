@@ -11,6 +11,7 @@ packages = [
 [tool.poetry.scripts]
 bot = "memebot.memebot:run"
 bot-debug = "memebot.memebot:run_debug"
+meme = "meme_generator.run:run_meme"
 
 [tool.poetry.dependencies]
 python = "^3.8"
