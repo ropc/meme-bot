@@ -95,7 +95,7 @@ ALL_MEMES = [
         help_string='Usage: !meme is this <a pidgeon> / <text on butterfly> / <text on face>',
         plugins=[
             SplitText(plugin_input=UserInput()),
-            DrawText(plugin_input=ContextInput(key='text-1', prefix='is this', suffix='?'),
+            DrawText(plugin_input=ContextInput(key='text-1', prefix='is this ', suffix='?'),
                 position=AutoPosition.BOTTOM, fontsize=62),
             DrawText(plugin_input=ContextInput(key='text-2'),
                 position=Coordinate(x=834, y=196), fontsize=62, maxwidth=12),
