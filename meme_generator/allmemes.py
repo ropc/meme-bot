@@ -1,4 +1,4 @@
-from .plugins import DrawText, TrimText, SpongifyText, AutoPosition, Coordinate, SplitText, StartsWithSelector, DrawImage, UserInput, RawInput, ContextInput
+from .plugins import DrawText, TrimText, SpongifyText, AutoPosition, Coordinate, SplitText, StartsWithSelector, DrawImage, UserInput, RawInput, ContextInput, TextStyle
 from .meme import Meme
 
 
@@ -28,7 +28,7 @@ ALL_MEMES = [
         help_string='Usage: !meme change my mind <text>',
         plugins=[
             DrawText(plugin_input=UserInput(), position=Coordinate(x=316, y=256),
-                maxwidth=15, fontsize=24, fontcolor='black', hastextoutline=False)
+                maxwidth=15, fontsize=24, textstyle=TextStyle.BLACK)
         ]
     ),
     Meme(
@@ -53,19 +53,19 @@ ALL_MEMES = [
                 startswith='http',
                 plugin_a=DrawImage(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=384, y=229)),
                 plugin_b=DrawText(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=384, y=229),
-                    maxwidth=15, fontsize=72, fontcolor='black', hastextoutline=False)),
+                    maxwidth=15, fontsize=72, textstyle=TextStyle.BLACK)),
             StartsWithSelector(
                 plugin_input=ContextInput(key='text-2'),
                 startswith='http',
                 plugin_a=DrawImage(plugin_input=ContextInput(key='text-2'), position=Coordinate(x=384, y=691)),
                 plugin_b=DrawText(plugin_input=ContextInput(key='text-2'), position=Coordinate(x=384, y=691),
-                    maxwidth=15, fontsize=72, fontcolor='black', hastextoutline=False)),
+                    maxwidth=15, fontsize=72, textstyle=TextStyle.BLACK)),
             StartsWithSelector(
                 plugin_input=ContextInput(key='text-3'),
                 startswith='http',
                 plugin_a=DrawImage(plugin_input=ContextInput(key='text-3'), position=Coordinate(x=384, y=1168)),
                 plugin_b=DrawText(plugin_input=ContextInput(key='text-3'), position=Coordinate(x=384, y=1168),
-                    maxwidth=12, fontsize=72, fontcolor='black', hastextoutline=False))
+                    maxwidth=12, fontsize=72, textstyle=TextStyle.BLACK))
         ]
     ),
     Meme(
@@ -85,13 +85,15 @@ ALL_MEMES = [
             SplitText(plugin_input=UserInput()),
             DrawText(plugin_input=ContextInput(key='text-1'),
                 position=Coordinate(x=166, y=143),
-                fontcolor='black', hastextoutline=False),
+                maxwidth=9,
+                textstyle=TextStyle.BLACK),
             DrawText(plugin_input=ContextInput(key='text-2'),
-                position=Coordinate(x=347, y=99),
-                fontcolor='black', hastextoutline=False),
+                position=Coordinate(x=356, y=99),
+                maxwidth=9,
+                textstyle=TextStyle.BLACK),
             DrawText(plugin_input=ContextInput(key='text-3'),
                 position=Coordinate(x=308, y=617),
-                fontcolor='black', hastextoutline=False),
+                textstyle=TextStyle.BLACK),
         ]
     )
 ]
