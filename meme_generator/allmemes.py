@@ -102,5 +102,19 @@ ALL_MEMES = [
             DrawText(plugin_input=ContextInput(key='text-3'),
                 position=Coordinate(x=294, y=409), fontsize=62),
         ]
+    ),
+    Meme(
+        image_filename='nut-button.jpg',
+        aliases=['nut button', 'blue button'],
+        help_string='Usage: !meme nut button <optional: text above meme> / <text on button> / <optional: text on hand>',
+        plugins=[
+            SplitText(plugin_input=UserInput()),
+            DrawText(plugin_input=ContextInput(key='text-1'),
+                position=AutoPosition.TOP, fontsize=62),
+            DrawText(plugin_input=ContextInput(key='text-2'),
+                position=Coordinate(x=485, y=1377), fontsize=62),
+            DrawText(plugin_input=ContextInput(key='text-3'),
+                position=Coordinate(x=1865, y=861), fontsize=62)
+        ]
     )
 ]
