@@ -226,9 +226,10 @@ def create_player_event_handler(text_channel: discord.TextChannel):
 def create_meme_executor(meme_generator: Meme) -> CommandExecutor:
     @executor(help_string=meme_generator.help_string)
     async def run_meme(command_arg: str, channel: discord.abc.Messageable):
-        async with meme_generator.generate(command_arg) as meme_image:
-            df = discord.File(meme_image, filename=meme_generator.image_filename)
-            return await channel.send(file=df)
+        async with channel.typing():
+            async with meme_generator.generate(command_arg) as meme_image:
+                df = discord.File(meme_image, filename=meme_generator.image_filename)
+                return await channel.send(file=df)
     return run_meme
 
 
