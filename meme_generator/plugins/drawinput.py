@@ -15,12 +15,12 @@ class DrawInput(BasePlugin):
     maxwidth: int = 20
     fontsize: int = 48
     textstyle: TextStyle = TextStyle.WHITE
-    size: Optional[Coordinate] = None
+    max_size: Optional[Coordinate] = None
 
     async def run(self, image: Image, context: Dict):
         text = self.get_input(context)
         if text.startswith('http://') or text.startswith('https://'):
-            draw_image = DrawImage(plugin_input=self.plugin_input, position=self.position, size=self.size)
+            draw_image = DrawImage(plugin_input=self.plugin_input, position=self.position, max_size=self.max_size)
             return await draw_image.run(image, context)
         else:
             draw_text = DrawText(plugin_input=self.plugin_input, position=self.position,

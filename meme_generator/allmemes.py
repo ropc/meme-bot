@@ -52,11 +52,14 @@ ALL_MEMES = [
         plugins=[
             SplitText(plugin_input=UserInput(), separator=' /'),
             DrawInput(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=384, y=229),
-                    maxwidth=15, fontsize=72, textstyle=TextStyle.BLACK),
+                    maxwidth=15, fontsize=72, textstyle=TextStyle.BLACK,
+                    max_size=Coordinate(x=762, y=450)),
             DrawInput(plugin_input=ContextInput(key='text-2'), position=Coordinate(x=384, y=691),
-                maxwidth=15, fontsize=72, textstyle=TextStyle.BLACK),
+                maxwidth=15, fontsize=72, textstyle=TextStyle.BLACK,
+                max_size=Coordinate(x=762, y=450)),
             DrawInput(plugin_input=ContextInput(key='text-3'), position=Coordinate(x=384, y=1168),
-                    maxwidth=12, fontsize=72, textstyle=TextStyle.BLACK),
+                    maxwidth=12, fontsize=72, textstyle=TextStyle.BLACK,
+                    max_size=Coordinate(x=762, y=450)),
         ]
     ),
     Meme(
