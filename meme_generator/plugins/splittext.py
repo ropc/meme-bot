@@ -4,10 +4,11 @@ from .baseplugin import BasePlugin
 
 
 class SplitText(BasePlugin):
-    separator: str = '/'  # mypy: ignore
+    separator: str = ' /'  # mypy: ignore
 
     async def run(self, image: Image, context: Dict):
         text = self.get_input(context)
+        # TODO: don't split URLs
         for (i, item) in enumerate(text.split(self.separator), 1):
             context[f'text-{i}'] = item.strip()
  

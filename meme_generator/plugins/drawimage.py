@@ -21,8 +21,9 @@ class DrawImage(BasePlugin):
         url = self.get_input(context)
 
         async with self.open_image(url) as custom_image:
+            # TODO: resize keeping aspect ratio
             if self.size:
-                custom_image = custom_image.resize((self.size.x, self.size.y))
+                custom_image = custom_image.resize((self.size.x, self.size.y), resample=Image.LANCZOS)
 
             size_x, size_y = custom_image.size[0], custom_image.size[1]
             pos_x, pos_y = find_centered_position((self.position.x, self.position.y), (size_x, size_y))

@@ -1,4 +1,4 @@
-from .plugins import DrawText, TrimText, SpongifyText, AutoPosition, Coordinate, SplitText, StartsWithSelector, DrawImage, UserInput, RawInput, ContextInput, TextStyle
+from .plugins import DrawText, TrimText, SpongifyText, AutoPosition, Coordinate, SplitText, DrawImage, UserInput, RawInput, ContextInput, TextStyle, DrawInput
 from .meme import Meme
 
 
@@ -37,9 +37,12 @@ ALL_MEMES = [
         help_string='Usage: !meme distracted bf <text1> / <text2> / <text3>',
         plugins=[
             SplitText(plugin_input=UserInput(), separator='/'),
-            DrawText(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=198, y=310), maxwidth=15, fontsize=48),
-            DrawText(plugin_input=ContextInput(key='text-2'), position=Coordinate(x=472, y=153), maxwidth=15, fontsize=48),
-            DrawText(plugin_input=ContextInput(key='text-3'), position=Coordinate(x=682, y=300), maxwidth=12, fontsize=48)
+            DrawText(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=198, y=310),
+                maxwidth=15, fontsize=48),
+            DrawText(plugin_input=ContextInput(key='text-2'), position=Coordinate(x=472, y=153),
+                maxwidth=15, fontsize=48),
+            DrawText(plugin_input=ContextInput(key='text-3'), position=Coordinate(x=682, y=300),
+                maxwidth=12, fontsize=48)
         ]
     ),
     Meme(
@@ -48,24 +51,12 @@ ALL_MEMES = [
         help_string='Usage: !meme brain <text1> / <text2> / <text3>',
         plugins=[
             SplitText(plugin_input=UserInput(), separator=' /'),
-            StartsWithSelector(
-                plugin_input=ContextInput(key='text-1'),
-                startswith='http',
-                plugin_a=DrawImage(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=384, y=229)),
-                plugin_b=DrawText(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=384, y=229),
-                    maxwidth=15, fontsize=72, textstyle=TextStyle.BLACK)),
-            StartsWithSelector(
-                plugin_input=ContextInput(key='text-2'),
-                startswith='http',
-                plugin_a=DrawImage(plugin_input=ContextInput(key='text-2'), position=Coordinate(x=384, y=691)),
-                plugin_b=DrawText(plugin_input=ContextInput(key='text-2'), position=Coordinate(x=384, y=691),
-                    maxwidth=15, fontsize=72, textstyle=TextStyle.BLACK)),
-            StartsWithSelector(
-                plugin_input=ContextInput(key='text-3'),
-                startswith='http',
-                plugin_a=DrawImage(plugin_input=ContextInput(key='text-3'), position=Coordinate(x=384, y=1168)),
-                plugin_b=DrawText(plugin_input=ContextInput(key='text-3'), position=Coordinate(x=384, y=1168),
-                    maxwidth=12, fontsize=72, textstyle=TextStyle.BLACK))
+            DrawInput(plugin_input=ContextInput(key='text-1'), position=Coordinate(x=384, y=229),
+                    maxwidth=15, fontsize=72, textstyle=TextStyle.BLACK),
+            DrawInput(plugin_input=ContextInput(key='text-2'), position=Coordinate(x=384, y=691),
+                maxwidth=15, fontsize=72, textstyle=TextStyle.BLACK),
+            DrawInput(plugin_input=ContextInput(key='text-3'), position=Coordinate(x=384, y=1168),
+                    maxwidth=12, fontsize=72, textstyle=TextStyle.BLACK),
         ]
     ),
     Meme(
