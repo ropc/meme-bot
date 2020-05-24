@@ -92,8 +92,7 @@ ALL_MEMES = [
                 maxwidth=9,
                 textstyle=TextStyle.BLACK),
             DrawText(plugin_input=ContextInput(key='text-3'),
-                position=Coordinate(x=308, y=617),
-                textstyle=TextStyle.BLACK),
+                position=Coordinate(x=308, y=617)),
         ]
     )
 ]
