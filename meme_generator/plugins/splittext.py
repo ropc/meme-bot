@@ -4,7 +4,7 @@ from .baseplugin import BasePlugin
 
 
 class SplitText(BasePlugin):
-    separator: str
+    separator: str = '/'  # mypy: ignore
 
     async def run(self, image: Image, context: Dict):
         text = self.get_input(context)

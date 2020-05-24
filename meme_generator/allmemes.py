@@ -76,5 +76,22 @@ ALL_MEMES = [
             DrawText(plugin_input=UserInput(), position=AutoPosition.BOTTOM, fontsize=42),
             DrawText(plugin_input=RawInput(text='One does not simply'), position=AutoPosition.TOP, fontsize=42)
         ]
+    ),
+    Meme(
+        image_filename='two-buttons.jpg',
+        aliases=['two buttons', 'buttons'],
+        help_string='Usage: !meme two buttons <option 1> / <option 2> / <person>',
+        plugins=[
+            SplitText(plugin_input=UserInput()),
+            DrawText(plugin_input=ContextInput(key='text-1'),
+                position=Coordinate(x=166, y=143),
+                fontcolor='black', hastextoutline=False),
+            DrawText(plugin_input=ContextInput(key='text-2'),
+                position=Coordinate(x=347, y=99),
+                fontcolor='black', hastextoutline=False),
+            DrawText(plugin_input=ContextInput(key='text-3'),
+                position=Coordinate(x=308, y=617),
+                fontcolor='black', hastextoutline=False),
+        ]
     )
 ]
