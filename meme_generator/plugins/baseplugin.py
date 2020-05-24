@@ -2,11 +2,11 @@ import abc
 from pydantic import BaseModel
 from typing import Dict, Union
 from PIL import Image
-from .input import PluginInput
+from .input import AbstractInput
 
 
 class BasePlugin(BaseModel, abc.ABC):
-    plugin_input: PluginInput
+    plugin_input: AbstractInput
 
     def get_input(self, context: Dict) -> str:
         return self.plugin_input.get_input(context)

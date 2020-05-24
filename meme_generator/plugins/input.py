@@ -1,5 +1,5 @@
 import abc
-from typing import Dict, Union
+from typing import Dict, Optional
 from pydantic import BaseModel
 
 USER_INPUT_KEY = 'user_input'
@@ -25,9 +25,13 @@ class UserInput(AbstractInput):
 
 class ContextInput(AbstractInput):
     key: str
+    prefix: Optional[str]
+    suffix: Optional[str]
 
     def get_input(self, context: Dict) -> str:
-        return context[self.key]
-
-
-PluginInput = Union[ContextInput, RawInput, UserInput]
+        text = context[self.key]
+        if self.prefix:
+            text = self.prefix + text
+        if self.suffix:
+            text = text + self.suffix
+        return text
