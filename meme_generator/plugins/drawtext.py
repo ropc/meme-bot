@@ -19,8 +19,8 @@ class DrawText(BasePlugin):
     fontsize: int = 48
     textstyle: TextStyle = TextStyle.WHITE
 
-    async def run(self, image: Image, context: Dict):
-        text = textwrap.fill(self.get_input(context), self.maxwidth)
+    async def run(self, image: Image, text: str, context: Dict):
+        text = textwrap.fill(text, self.maxwidth)
         draw = ImageDraw.Draw(image)
         font = ImageFont.truetype('Impact', self.fontsize)
 

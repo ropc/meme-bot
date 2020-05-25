@@ -7,7 +7,7 @@ USER_INPUT_KEY = 'user_input'
 
 class AbstractInput(BaseModel, abc.ABC):
     @abc.abstractmethod
-    def get_input(self, context: Dict) -> str:
+    def get_input(self, context: Dict) -> Optional[str]:
         pass
 
 
@@ -19,8 +19,8 @@ class RawInput(AbstractInput):
 
 
 class UserInput(AbstractInput):
-    def get_input(self, context: Dict) -> str:
-        return context[USER_INPUT_KEY]
+    def get_input(self, context: Dict) -> Optional[str]:
+        return context.get(USER_INPUT_KEY)
 
 
 class ContextInput(AbstractInput):
@@ -28,8 +28,10 @@ class ContextInput(AbstractInput):
     prefix: Optional[str]
     suffix: Optional[str]
 
-    def get_input(self, context: Dict) -> str:
-        text = context[self.key]
+    def get_input(self, context: Dict) -> Optional[str]:
+        text = context.get(self.key)
+        if not text:
+            return None
         if self.prefix:
             text = self.prefix + text
         if self.suffix:
