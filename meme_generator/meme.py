@@ -32,12 +32,12 @@ class Meme(BaseModel):
             for plugin in self.plugins:
                 input_text = plugin.plugin_input.get_input(context)
 
-                log.debug(f'Meme input text: {input_text}, context: {context}, next plugin: {plugin!r}')
+                log.debug(f'Plugin input text: {input_text}, context: {context}, plugin: {plugin!r}')
 
                 if input_text is not None:
                     await plugin.run(image, input_text, context)
                 elif plugin.required:
-                    raise ValueError(f'Missing input plugin: {plugin}')
+                    raise ValueError(f'Missing input for required plugin: {plugin}')
 
             image.save(meme_file, format=image.format)
 
