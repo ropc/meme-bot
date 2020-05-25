@@ -1,0 +1,7 @@
+version: '3'
+
+services:
+    meme-bot:
+        env_file:
+            - debug.env
+        command: [ "bot-debug" ]
