@@ -7,10 +7,8 @@ from .input import AbstractInput
 
 class BasePlugin(BaseModel, abc.ABC):
     plugin_input: AbstractInput
-
-    def get_input(self, context: Dict) -> str:
-        return self.plugin_input.get_input(context)
+    required: bool = True
 
     @abc.abstractmethod
-    async def run(self, image: Image, context: Dict):
+    async def run(self, image: Image, text: str, context: Dict):
         pass

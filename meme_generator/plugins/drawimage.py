@@ -18,9 +18,7 @@ class DrawImage(BasePlugin):
     position: Coordinate
     max_size: Optional[Coordinate] = None
 
-    async def run(self, image: Image, context: Dict):
-        url = self.get_input(context)
-
+    async def run(self, image: Image, url: str, context: Dict):
         async with self.open_image(url) as custom_image:
             max_size_x = self.max_size.x if self.max_size else image.size[0] // 2
             max_size_y = self.max_size.y if self.max_size else image.size[1] // 2

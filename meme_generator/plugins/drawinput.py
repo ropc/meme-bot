@@ -17,12 +17,11 @@ class DrawInput(BasePlugin):
     textstyle: TextStyle = TextStyle.WHITE
     max_size: Optional[Coordinate] = None
 
-    async def run(self, image: Image, context: Dict):
-        text = self.get_input(context)
+    async def run(self, image: Image, text: str, context: Dict):
         if text.startswith('http://') or text.startswith('https://'):
             draw_image = DrawImage(plugin_input=self.plugin_input, position=self.position, max_size=self.max_size)
-            return await draw_image.run(image, context)
+            return await draw_image.run(image, text, context)
         else:
             draw_text = DrawText(plugin_input=self.plugin_input, position=self.position,
                 maxwidth=self.maxwidth, fontsize=self.fontsize, textstyle=self.textstyle)
-            return await draw_text.run(image, context)
+            return await draw_text.run(image, text, context)
