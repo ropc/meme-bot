@@ -110,11 +110,11 @@ ALL_MEMES = [
         plugins=[
             SplitText(plugin_input=UserInput()),
             DrawText(plugin_input=ContextInput(key='text-1'),
-                position=AutoPosition.TOP, fontsize=62),
+                position=AutoPosition.TOP, fontsize=270),
             DrawText(plugin_input=ContextInput(key='text-2'),
-                position=Coordinate(x=485, y=1377), fontsize=62),
+                position=Coordinate(x=975, y=1600), fontsize=320, maxwidth=10),
             DrawText(plugin_input=ContextInput(key='text-3'),
-                position=Coordinate(x=1865, y=861), fontsize=62)
+                position=Coordinate(x=2200, y=1345), fontsize=300, maxwidth=12)
         ]
     )
 ]
