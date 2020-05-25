@@ -366,8 +366,8 @@ def run_debug():
     if args.wait:
         ptvsd.wait_for_attach()
 
-    bot = MemeBot(known_memes=ALL_MEMES, guild_config=os.getenv('MEME_BOT_TEST_GUILD_CONFIG'))
-    bot.run(os.getenv('MEME_BOT_TEST_TOKEN'))
+    bot = MemeBot(known_memes=ALL_MEMES, guild_config=os.getenv('MEME_BOT_GUILD_CONFIG'))
+    bot.run(os.getenv('MEME_BOT_TOKEN'))
 
 if __name__ == "__main__":
     run()
