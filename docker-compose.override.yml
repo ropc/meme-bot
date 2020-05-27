@@ -5,3 +5,5 @@ services:
         env_file:
             - debug.env
         command: [ "bot-debug" ]
+        ports:
+            - "5678:5678"
