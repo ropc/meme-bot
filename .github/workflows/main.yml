@@ -23,15 +23,8 @@ jobs:
     # this decrypts the ssh key and stores it in $HOME/secrets/githubaction-key.pem
     # maybe we should add a step to delete after deploying?
     - name: Decrypt ssh key
-      run: ./.github/scripts/decrypt_secret.sh
-      env:
-        SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
-    
-    - name: Connect to SSH server
-      run: ssh -i $HOME/secrets/githubaction-key.pem ${{secrets.SSH_DESTINATION}}
-
-    - name: Switch to dir and git pull
-      run: cd ${{secrets.REMOTE_DIR}} && git pull
-
-    - name: Run docker-compose to get project running
-      run: sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+      run: |
+        ./.github/scripts/decrypt_secret.sh
+        ssh -i $HOME/secrets/githubaction-key.pem ${{secrets.SSH_DESTINATION}}
+        cd ${{secrets.REMOTE_DIR}} && git pull
+        sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
