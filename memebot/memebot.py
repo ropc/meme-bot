@@ -26,8 +26,8 @@ log.setLevel(logging.DEBUG)
 
 class PlayerConfig(BaseModel):
     player: Player
-    voice_channel_id: int
-    text_channel_id: int
+    voice_channel: discord.VoiceChannel
+    text_channel: discord.TextChannel
 
     class Config:
         arbitrary_types_allowed = True
@@ -79,19 +79,23 @@ class MemeBot(discord.Client):
         if message.author.bot:
             return
 
-        command = self.parse_message(message.content)
+        command = self.parse_message(message)
         if command:
             await command.execute(message.channel)
 
-    def parse_message(self, message_content: str) -> Optional[Command]:
-        command_name, command_executor = self.commands.longest_prefix(message_content)
+    def parse_message(self, message: discord.Message) -> Optional[Command]:
+        command_name, command_executor = self.commands.longest_prefix(message.content)
         if command_name is None:
             return None
 
-        command_arg = message_content[len(command_name):].strip()
+        command_arg = message.content[len(command_name):].strip()
 
-        return Command(name=command_name, arg=command_arg,
-            executor=command_executor, raw_command=message_content)
+        return Command(
+            name=command_name,
+            arg=command_arg,
+            executor=command_executor,
+            initiator=message.author,
+            raw_command=message.content)
 
     async def setup_voice(self):
         log.info('setting up voice channels')
@@ -116,56 +120,57 @@ class MemeBot(discord.Client):
 
             self.guild_player_config[guild.id] = PlayerConfig(
                 player=player,
-                voice_channel_id=config.voice_channel_id,
-                text_channel_id=config.text_channel_id)
+                voice_channel=voice_channel,
+                text_channel=text_channel)
 
         log.info('done setting up voice channels')
 
 
 PlayerConfigProvider = Callable[[int], Optional[PlayerConfig]]
-PlayerCommandExecutor = Callable[[str, discord.TextChannel, PlayerConfig], Awaitable[None]]
+PlayerCommandExecutor = Callable[[Command, discord.TextChannel, PlayerConfig], Awaitable[None]]
 
 
-def ignore_by_player_config_provider(player_config_provider: PlayerConfigProvider) -> Callable[[PlayerCommandExecutor], CommandExecutor]:
+def filter_player_commands(*, player_config_provider: PlayerConfigProvider, voice_channel_restricted: bool) -> Callable[[PlayerCommandExecutor], CommandExecutor]:
     """Decorator factory to ignore player commands on unsupported servers/channels
     Arguments:
         player_config_provider {Provider[PlayerConfig]} -- provides Player and PlayerConfig
             based on received message's guild id
+        voice_channel_restricted {bool} -- if true, will ignore commands by users not connected
+            to voice channel
     Returns:
         CommandExecutor -- That will execute the PlayerCommandExecutor when a message
             is received in the allowed channel
     """
-    async def no_op_awaitable():
-        # TODO: better feedback
-        pass
-
     def wrapper(func: PlayerCommandExecutor):
         @executor()
         @wraps(func)
-        def wrapped(command_arg: str, channel: discord.TextChannel):
+        def wrapped(command: Command, channel: discord.TextChannel):
             config = player_config_provider(channel.guild.id)
             if not config:
                 log.debug(f'could not find config for guild id {channel.guild.id}')
-                return no_op_awaitable()
-            if config.text_channel_id != channel.id:
-                log.debug(f'player command in guild {channel.guild.id} did not come from PlayerConfig.text_channel_id {config.text_channel_id}')
-                return no_op_awaitable()
-            return func(command_arg, channel, config)
+                return channel.send(f'Player not configured for this server')
+            if config.text_channel.id != channel.id:
+                log.debug(f'player command in guild {channel.guild.id} did not come from PlayerConfig.text_channel_id {config.text_channel.id}')
+                return channel.send(f'Command {command.raw_command!r} must be made in #{config.text_channel.name}')
+            if voice_channel_restricted and command.initiator.id not in (member.id for member in config.voice_channel.members):
+                log.debug(f'initiator not in voice channel')
+                return channel.send(f'User must be in voice channel {config.voice_channel.name!r} to use this command: {command.raw_command!r}')
+            return func(command, channel, config)
         return wrapped
     return wrapper
 
 
 def create_play_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
-    @ignore_by_player_config_provider(player_config_provider)
-    async def play(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+    @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=True)
+    async def play(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
         '''search for a song and add to queue'''
-        await player_config.player.enqueue(command_arg)
+        await player_config.player.enqueue(command.arg)
     return play
 
 
 def create_skip_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
-    @ignore_by_player_config_provider(player_config_provider)
-    async def skip(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+    @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=True)
+    async def skip(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
         '''skips current song, if one is playing'''
         await asyncio.gather(
             player_config.player.skip(),
@@ -175,8 +180,8 @@ def create_skip_executor(player_config_provider: PlayerConfigProvider) -> Comman
 
 
 def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
-    @ignore_by_player_config_provider(player_config_provider)
-    async def show_queue(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+    @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=False)
+    async def show_queue(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
         '''shows current queue'''
         if len(player_config.player.playback_queue) == 0:
             return await channel.send('Nothing in queue. Add a song with !play', delete_after=30)
@@ -225,9 +230,9 @@ def create_player_event_handler(text_channel: discord.TextChannel):
 
 def create_meme_executor(meme_generator: Meme) -> CommandExecutor:
     @executor(help_string=meme_generator.help_string)
-    async def run_meme(command_arg: str, channel: discord.abc.Messageable):
+    async def run_meme(command: Command, channel: discord.abc.Messageable):
         async with channel.typing():
-            async with meme_generator.generate(command_arg) as meme_image:
+            async with meme_generator.generate(command.arg) as meme_image:
                 df = discord.File(meme_image, filename=meme_generator.image_filename)
                 return await channel.send(file=df)
     return run_meme
@@ -236,16 +241,16 @@ def create_meme_executor(meme_generator: Meme) -> CommandExecutor:
 def create_memelist_command_executor(memes: Iterable[Meme]) -> CommandExecutor:
     aliases = ', '.join(m.aliases[0] for m in memes)
     @executor()
-    async def send_memelist(command_arg: str, channel: discord.abc.Messageable):
+    async def send_memelist(command: Command, channel: discord.abc.Messageable):
         '''lists all known memes'''
         return await channel.send(f'I know these memes: {aliases}', delete_after=30)
     return send_memelist
 
 
 @executor()
-async def roll_dice(command_arg: str, channel: discord.abc.Messageable):
+async def roll_dice(command: Command, channel: discord.abc.Messageable):
     '''rolls dice. Example: !roll 5d6'''
-    num_dice, num_sides = [int(x if x else 1) for x in command_arg.split('d')]
+    num_dice, num_sides = [int(x if x else 1) for x in command.arg.split('d')]
 
     # soft limit. (2k - 16) hardcoded characters in message
     if num_dice * num_sides.bit_length() > 1984:
@@ -281,13 +286,13 @@ def create_help_command_executor(commands: Trie) -> CommandExecutor:
         return inverted_map
 
     @executor()
-    async def help_command(command_arg: str, channel: discord.abc.Messageable):
+    async def help_command(command: Command, channel: discord.abc.Messageable):
         '''lists all commands'''
-        if len(command_arg) == 0:
+        if len(command.arg) == 0:
             commands_string = '\n'.join(format_command(aliases, executor) for (executor, aliases) in inverted_commands_map(commands).items())
             return await channel.send(f'known commands are:\n{commands_string}', delete_after=5*60)
 
-        command_name = command_arg if command_arg.startswith('!') else f'!{command_arg}'
+        command_name = command.arg if command.arg.startswith('!') else f'!{command.arg}'
         alias, executor = commands.longest_prefix(command_name)
 
         # maybe the user didn't include '!meme'
@@ -301,7 +306,7 @@ def create_help_command_executor(commands: Trie) -> CommandExecutor:
 
 
 @executor()
-async def chat_stats(command_arg: str, channel: discord.TextChannel):
+async def chat_stats(command: Command, channel: discord.TextChannel):
     '''Display stats for this channel. Optionally given # days back. Will look only look at most 10k messages
     Example: !chatstats 10 -> chat stats for the last 10 days
     '''
@@ -317,7 +322,7 @@ async def chat_stats(command_arg: str, channel: discord.TextChannel):
     async with channel.typing():  # at least give some level of feedback
         counts: Dict[str, int] = {}
 
-        days_back = parse_days_back(command_arg)
+        days_back = parse_days_back(command.arg)
 
         async for message in channel.history(limit=10_000, after=days_back, oldest_first=False).filter(lambda m: not m.author.bot):  #type: discord.Message
             counts[message.author.display_name] = counts.get(message.author.display_name, 0) + 1
