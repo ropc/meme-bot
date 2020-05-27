@@ -285,7 +285,7 @@ def create_help_command_executor(commands: Trie) -> CommandExecutor:
         '''lists all commands'''
         if len(command_arg) == 0:
             commands_string = '\n'.join(format_command(aliases, executor) for (executor, aliases) in inverted_commands_map(commands).items())
-            return await channel.send(f'known commands are:\n{commands_string}', delete_after=60)
+            return await channel.send(f'known commands are:\n{commands_string}', delete_after=5*60)
 
         command_name = command_arg if command_arg.startswith('!') else f'!{command_arg}'
         alias, executor = commands.longest_prefix(command_name)
@@ -295,8 +295,8 @@ def create_help_command_executor(commands: Trie) -> CommandExecutor:
             alias, executor = commands.longest_prefix(f'!meme {command_name[1:]}')
 
         if not alias or not executor:
-            return await channel.send(f"i don't know the command '{command_name}'", delete_after=30)
-        return await channel.send(format_command([alias], executor), delete_after=30)
+            return await channel.send(f"i don't know the command '{command_name}'", delete_after=60)
+        return await channel.send(format_command([alias], executor), delete_after=60)
     return help_command
 
 
