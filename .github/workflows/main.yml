@@ -19,9 +19,16 @@ jobs:
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: actions/checkout@v2
+
+    # this decrypts the ssh key and stores it in $HOME/secrets/githubaction-key.pem
+    # maybe we should add a step to delete after deploying?
+    - name: Decrypt ssh key
+      run: ./.github/scripts/decrypt_secret.sh
+      env:
+        SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
     
     - name: Connect to SSH server
-      run: ssh -i ${{secrets.SSH_KEY}} ${{secrets.CONNECTION}}
+      run: ssh -i $HOME/secrets/githubaction-key.pem ${{secrets.SSH_DESTINATION}}
 
     - name: Switch to dir and git pull
       run: cd ${{secrets.REMOTE_DIR}} && git pull
