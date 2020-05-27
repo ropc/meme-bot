@@ -70,10 +70,8 @@ class Player(PlayerABC):
         except ValueError:
             return
 
-        try:
+        if idx in range(len(self._playback_queue)):
             del self._playback_queue[idx]
-        except IndexError:
-            return
 
     async def _connected_voice_client(self):
         if not self._voice_client or not self._voice_client.is_connected():

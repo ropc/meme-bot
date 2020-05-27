@@ -190,7 +190,7 @@ def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> 
 def create_queue_remove_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @ignore_by_player_config_provider(player_config_provider)
     async def queue_remove(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
-        """allows the removal of a specific song from the queue"""
+        """Allows the removal of a specific song from the queue by index. Usage: !remove 2"""
         await player_config.player.remove(command_arg)
         await queue_display(command_arg, channel, player_config)
     return queue_remove
