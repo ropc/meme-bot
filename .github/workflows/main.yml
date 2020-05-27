@@ -26,7 +26,8 @@ jobs:
       env:
         SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
       run: |
+        cd ${{secrets.REMOTE_DIR}}
         ./.github/scripts/decrypt_secret.sh
         ssh -i $HOME/secrets/githubaction-key.pem ${{secrets.SSH_DESTINATION}}
-        cd ${{secrets.REMOTE_DIR}} && git pull
+        git pull
         sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
