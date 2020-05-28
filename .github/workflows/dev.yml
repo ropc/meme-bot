@@ -26,8 +26,8 @@ jobs:
         SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
         REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
       run: |
-        ./.github/scripts/decrypt_secret.sh
-        ssh -i $GITHUB_WORKSPACE/secrets/githubaction-key.pem $SSH_DESTINATION
+        $GITHUB_WORKSPACE/.github/scripts/decrypt_secret.sh
+        ssh -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION
         cd $REMOTE_DIR
         # git pull
         # sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
