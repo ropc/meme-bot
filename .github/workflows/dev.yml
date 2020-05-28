@@ -31,7 +31,9 @@ jobs:
       env:
         SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
         REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
-      run: $GITHUB_WORKSPACE/.github/scripts/add_ssh_key.sh
+      run: 
+        shell: !/usr/bin/expect -f
+        $GITHUB_WORKSPACE/.github/scripts/add_ssh_key.sh
 
     - name: SSH into remote computer
       env:
