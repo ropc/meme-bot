@@ -62,6 +62,7 @@ class MemeBot(discord.Client):
         self.commands['!play'] = create_play_executor(self.guild_player_config.get)
         self.commands['!skip'] = create_skip_executor(self.guild_player_config.get)
         self.commands['!queue'] = create_show_queue_executor(self.guild_player_config.get)
+        self.commands['!remove'] = create_queue_remove_executor(self.guild_player_config.get)
 
         # chat stats
         self.commands['!chatstats'] = chat_stats
@@ -178,17 +179,26 @@ def create_skip_executor(player_config_provider: PlayerConfigProvider) -> Comman
         )
     return skip
 
+async def queue_display(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+    if len(player_config.player.playback_queue) == 0:
+        return await channel.send('Nothing in queue. Add a song with !play', delete_after=30)
+    queue = '\n'.join(f'[{idx}] {item.title}' for idx,item in enumerate(player_config.player.playback_queue))
+    return await channel.send(f'Up next:\n{queue}', delete_after=60)
 
 def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=False)
     async def show_queue(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
         '''shows current queue'''
-        if len(player_config.player.playback_queue) == 0:
-            return await channel.send('Nothing in queue. Add a song with !play', delete_after=30)
-        queue = '\n'.join(f'- {item.title}' for item in player_config.player.playback_queue)
-        return await channel.send(f'Up next:\n{queue}', delete_after=60)
+        await queue_display(command_arg, channel, player_config)
     return show_queue
 
+def create_queue_remove_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
+    @ignore_by_player_config_provider(player_config_provider)
+    async def queue_remove(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+        """Allows the removal of a specific song from the queue by index. Usage: !remove 2"""
+        await player_config.player.remove(command_arg)
+        await queue_display(command_arg, channel, player_config)
+    return queue_remove
 
 def create_player_event_handler(text_channel: discord.TextChannel):
     # maps transaction_id to discord.Message. maybe overkill

@@ -64,6 +64,15 @@ class Player(PlayerABC):
         self._voice_client.stop()
         await self._play_next()
 
+    async def remove(self, num_string: str):
+        try:
+            idx = int(num_string)
+        except ValueError:
+            return
+
+        if idx in range(len(self._playback_queue)):
+            del self._playback_queue[idx]
+
     async def _connected_voice_client(self):
         if not self._voice_client or not self._voice_client.is_connected():
             log.debug(f'creating new voice client for {self._voice_channel}')
