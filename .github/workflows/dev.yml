@@ -30,6 +30,7 @@ jobs:
     - name: SSH into remote computer
       env:
         SSH_DESTINATION: ${{ secrets.SSH_DESTINATION }}
+        REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
       run: |
         ssh -oStrictHostKeyChecking=no -T -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION
         cd $REMOTE_DIR
