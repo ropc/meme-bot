@@ -78,6 +78,12 @@ class Player(PlayerABC):
         if idx >= 0 and idx < len(self._playback_queue):
             del self._playback_queue[idx]
 
+    async def force_disconnect(self):
+        if self._voice_client:
+            self._voice_client.stop()
+            await self._voice_client.disconnect(force=True)
+        self._voice_client = None
+
     async def _connected_voice_client(self):
         if not self._voice_client or not self._voice_client.is_connected():
             log.debug(f'creating new voice client for {self._voice_channel}')

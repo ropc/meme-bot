@@ -103,17 +103,18 @@ class MemeBot(discord.Client):
         for guild in self.guilds:
             config = get_guild_config(self.guild_config, guild.id)
             if not config:
-                log.debug(f"guild {guild.id} not found in bot's guilds")
+                log.debug(f"guild {guild.name!r} not found in bot's guilds")
                 continue
             if guild.id in self.guild_player_config:
-                log.warning(f'already have player config for guild {guild.id}')
-                continue
+                log.info(f'player already exists. probably reconnected. removing old player for guild {guild.name!r}')
+                old_player = self.guild_player_config[guild.id]
+                await old_player.force_disconnect()
 
             voice_channel: discord.VoiceChannel = self.get_channel(config.voice_channel_id)
             text_channel: discord.TextChannel = self.get_channel(config.text_channel_id)
 
             if not voice_channel or not text_channel:
-                log.warning(f'could not get voice/text channels for guild {guild.id}. GuildConfig: {config}')
+                log.warning(f'could not get voice/text channels for guild {guild.name!r}. GuildConfig: {config}')
                 continue
 
             log.debug(f'creating player for voice_channel: {voice_channel} text_channel: {text_channel}')
