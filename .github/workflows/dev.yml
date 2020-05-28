@@ -27,12 +27,6 @@ jobs:
         REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
       run: $GITHUB_WORKSPACE/.github/scripts/decrypt_secret.sh
 
-    - name: Add ssh key with passphrase
-      env:
-        SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
-        REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
-      run: $GITHUB_WORKSPACE/.github/scripts/add_ssh_key.sh
-
     - name: SSH into remote computer
       env:
         SSH_DESTINATION: ${{ secrets.SSH_DESTINATION }}
