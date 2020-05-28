@@ -6,3 +6,4 @@ mkdir $HOME/secrets
 # --yes to assume "yes" for questions
 gpg --quiet --batch --yes --decrypt --passphrase="$SSH_KEY_PASSPHRASE" \
 --output $HOME/secrets/githubaction-key.pem $GITHUB_WORKSPACE/.github/scripts/githubaction-key.pem.gpg
+chmod 600 $HOME/secrets/githubaction-key.pem
