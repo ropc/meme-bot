@@ -6,7 +6,8 @@ name: CI
 # events but only for the master branch
 on:
   push:
-    branches: [ master ]
+    branches:
+      [ master ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -31,8 +32,5 @@ jobs:
     - name: SSH into remote computer
       env:
         SSH_DESTINATION: ${{ secrets.SSH_DESTINATION }}
-      run: |
-        ssh -oStrictHostKeyChecking=no -T -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION
-        cd $REMOTE_DIR
-        git pull
-        sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+        REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
+      run: ssh -oStrictHostKeyChecking=no -T -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION "cd $REMOTE_DIR && git status && sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build"
