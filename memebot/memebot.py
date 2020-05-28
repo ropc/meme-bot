@@ -189,15 +189,15 @@ def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> 
     @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=False)
     async def show_queue(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
         '''shows current queue'''
-        await queue_display(command_arg, channel, player_config)
+        await queue_display(command.arg, channel, player_config)
     return show_queue
 
 def create_queue_remove_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
-    @ignore_by_player_config_provider(player_config_provider)
-    async def queue_remove(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
+    @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=False)
+    async def queue_remove(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
         """Allows the removal of a specific song from the queue by index. Usage: !remove 2"""
-        await player_config.player.remove(command_arg)
-        await queue_display(command_arg, channel, player_config)
+        await player_config.player.remove(command.arg)
+        await queue_display(command.arg, channel, player_config)
     return queue_remove
 
 def create_player_event_handler(text_channel: discord.TextChannel):
