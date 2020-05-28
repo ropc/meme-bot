@@ -27,6 +27,8 @@ jobs:
         REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
       run: |
         $GITHUB_WORKSPACE/.github/scripts/decrypt_secret.sh
+
+    - name: SSH into remote computer
         ssh -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION
         cd $REMOTE_DIR
         # git pull
