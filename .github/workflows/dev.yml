@@ -33,5 +33,5 @@ jobs:
       run: |
         ssh -oStrictHostKeyChecking=no -T -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION
         cd $REMOTE_DIR
-        # git pull
+        git status
         # sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
