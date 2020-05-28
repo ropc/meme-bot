@@ -1,6 +1,6 @@
-FROM python:3.8
+FROM python:3.8-slim-buster
 
-RUN apt-get update && apt-get install -y ffmpeg
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
 RUN pip install poetry==1.0.5
 WORKDIR /tmp/meme-bot
 COPY poetry.lock pyproject.toml ./
