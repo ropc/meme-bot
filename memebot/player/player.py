@@ -61,8 +61,13 @@ class Player(PlayerABC):
 
     async def skip(self):
         log.debug(f'skipping current song (if any) on {self._voice_channel}')
-        self._voice_client.stop()
-        await self._play_next()
+        # If already playing, calling `VoiceClient.stop()` will trigger after() to be called
+        # which will play the next song in the playlist
+        # TODO: A better fix might be to keep track of keys/ids for the next song to play
+        if self._voice_client and self._voice_client.is_playing():
+            self._voice_client.stop()
+        else:
+            await self._play_next()
 
     async def remove(self, num_string: str):
         try:
@@ -70,7 +75,7 @@ class Player(PlayerABC):
         except ValueError:
             return
 
-        if idx in range(len(self._playback_queue)):
+        if idx >= 0 and idx < len(self._playback_queue):
             del self._playback_queue[idx]
 
     async def _connected_voice_client(self):
@@ -90,9 +95,15 @@ class Player(PlayerABC):
         voice_client = await self._connected_voice_client()
 
         log.info(f'gonna play {item.title} from {item.url}')
-        voice_client.play(discord.FFmpegPCMAudio(item.filepath), after=self._create_after(item))
+        try:
+            voice_client.play(discord.FFmpegPCMAudio(item.filepath), after=self._create_after(item))
+        except discord.ClientException as e:
+            log.warning(f'Error when trying to play {item.title}', exc_info=True)  # this shouldn't happen
+            await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.PLAYBACK_ERROR, item=item))
+            return
+
         await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.STARTED, item=item))
-    
+
     def _create_after(self, item: PlaybackItem):
         async def try_disconnect():
             if len(self._playback_queue) > 0 or self._voice_client is None or self._voice_client.is_playing():
