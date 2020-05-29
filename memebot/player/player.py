@@ -38,6 +38,7 @@ class Player(PlayerABC):
         self._download_url_provider: DownloadUrlProvider = download_url_provider or YoutubeUrlProvider()
         self._playback_item_provider: PlaybackItemProvider = playback_item_provider or YoutubePlaybackItemProvider()
         self._item_downloader: ItemDownloader = item_downloader or YoutubeItemDownloader()
+        self.now_playing_item: Optional[PlaybackItem] = None
 
     @property
     def playback_queue(self):
@@ -102,6 +103,7 @@ class Player(PlayerABC):
             await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.PLAYBACK_ERROR, item=item))
             return
 
+        self.now_playing_item = item
         await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.STARTED, item=item))
 
     def _create_after(self, item: PlaybackItem):
@@ -113,7 +115,7 @@ class Player(PlayerABC):
             await self._voice_client.disconnect()
             self._voice_client = None
 
-        async def after(error):
+        async def async_after(error):
             event_type = PlayerEvent.Type.PLAYBACK_ERROR if error else PlayerEvent.Type.FINISHED
             was_last_item = len(self._playback_queue) == 0
             log.debug(f'finished playback. event_type: {event_type} was_last_item: {was_last_item}')
@@ -128,7 +130,11 @@ class Player(PlayerABC):
                 await asyncio.sleep(5 * 60)
                 await try_disconnect()
 
-        return lambda error: self._loop.create_task(after(error))
+        def after(error):
+            self._now_playing_item = None  # don't want any delay for this
+            self._loop.create_task(async_after(error))
+
+        return after
 
     async def _download(self, item: PlaybackItem):
         state = await self._item_downloader.download(item)
