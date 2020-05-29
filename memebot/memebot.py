@@ -63,6 +63,9 @@ class MemeBot(discord.Client):
         self.commands['!skip'] = create_skip_executor(self.guild_player_config.get)
         self.commands['!queue'] = create_show_queue_executor(self.guild_player_config.get)
         self.commands['!remove'] = create_queue_remove_executor(self.guild_player_config.get)
+        now_playing_executor = create_now_playing_executor(self.guild_player_config.get)
+        self.commands['!now playing'] = now_playing_executor
+        self.commands['!np'] = now_playing_executor
 
         # chat stats
         self.commands['!chatstats'] = chat_stats
@@ -179,11 +182,13 @@ def create_skip_executor(player_config_provider: PlayerConfigProvider) -> Comman
         )
     return skip
 
+
 async def queue_display(command_arg: str, channel: discord.TextChannel, player_config: PlayerConfig):
     if len(player_config.player.playback_queue) == 0:
         return await channel.send('Nothing in queue. Add a song with !play', delete_after=30)
     queue = '\n'.join(f'[{idx}] {item.title}' for idx,item in enumerate(player_config.player.playback_queue))
     return await channel.send(f'Up next:\n{queue}', delete_after=60)
+
 
 def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=False)
@@ -192,6 +197,7 @@ def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> 
         await queue_display(command.arg, channel, player_config)
     return show_queue
 
+
 def create_queue_remove_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=False)
     async def queue_remove(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
@@ -199,6 +205,19 @@ def create_queue_remove_executor(player_config_provider: PlayerConfigProvider) -
         await player_config.player.remove(command.arg)
         await queue_display(command.arg, channel, player_config)
     return queue_remove
+
+
+def create_now_playing_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
+    @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=False)
+    async def now_playing(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
+        '''Shows song currently playing'''
+        if not player_config.player.now_playing_item:
+            await channel.send('Nothing playing. Add a song with !play', delete_after=30)
+            return
+        title = player_config.player.now_playing_item.title
+        await channel.send(f'Now playing: {title}', delete_after=60)
+    return now_playing
+
 
 def create_player_event_handler(text_channel: discord.TextChannel):
     # maps transaction_id to discord.Message. maybe overkill
