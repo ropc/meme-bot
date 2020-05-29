@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 from pydantic import BaseModel
 from pygtrie import CharTrie, Trie
 from functools import wraps
-from typing import Dict, Iterable, Set, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping
+from typing import Dict, Iterable, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping, List
 from meme_generator import Meme, ALL_MEMES
-from .command import Command, CommandExecutor, executor
+from .command import UserCommand, CommandExecutor, CommandEntry, executor, create_embed
 from .player import Player, PlayerABC, PlayerEvent, SearchEvent, PlayerDelegate
 from .guildconfig import GuildConfig, get_guild_config
 
@@ -49,10 +49,12 @@ class MemeBot(discord.Client):
             executor = create_meme_executor(meme)
             for alias in meme.aliases:
                 self.commands[f'!meme {alias}'] = executor
+
         # meme list
-        memelist_command_executor = create_memelist_command_executor(known_memes)
-        self.commands['!meme list'] = memelist_command_executor
-        self.commands['!memelist'] = memelist_command_executor
+        meme_help_command_executor = create_help_command_executor(self.commands, prefix='!meme')
+        self.commands['!meme list'] = meme_help_command_executor
+        self.commands['!memelist'] = meme_help_command_executor
+        self.commands['!meme'] = meme_help_command_executor
 
         # dice roll
         self.commands['!r'] = roll_dice
@@ -72,7 +74,9 @@ class MemeBot(discord.Client):
         self.commands['!chat stats'] = chat_stats
 
         # help
-        self.commands['!help'] = create_help_command_executor(self.commands)
+        help_command_executor = create_help_command_executor(self.commands)
+        self.commands['!halp'] = help_command_executor
+        self.commands['!help'] = help_command_executor
 
     async def on_ready(self):
         log.info(f'We have logged in as {self.user}')
@@ -87,14 +91,14 @@ class MemeBot(discord.Client):
         if command:
             await command.execute(message.channel)
 
-    def parse_message(self, message: discord.Message) -> Optional[Command]:
+    def parse_message(self, message: discord.Message) -> Optional[UserCommand]:
         command_name, command_executor = self.commands.longest_prefix(message.content)
         if command_name is None:
             return None
 
         command_arg = message.content[len(command_name):].strip()
 
-        return Command(
+        return UserCommand(
             name=command_name,
             arg=command_arg,
             executor=command_executor,
@@ -131,7 +135,7 @@ class MemeBot(discord.Client):
 
 
 PlayerConfigProvider = Callable[[int], Optional[PlayerConfig]]
-PlayerCommandExecutor = Callable[[Command, discord.TextChannel, PlayerConfig], Awaitable[None]]
+PlayerCommandExecutor = Callable[[UserCommand, discord.TextChannel, PlayerConfig], Awaitable[None]]
 
 
 def filter_player_commands(*, player_config_provider: PlayerConfigProvider, voice_channel_restricted: bool) -> Callable[[PlayerCommandExecutor], CommandExecutor]:
@@ -148,7 +152,7 @@ def filter_player_commands(*, player_config_provider: PlayerConfigProvider, voic
     def wrapper(func: PlayerCommandExecutor):
         @executor()
         @wraps(func)
-        def wrapped(command: Command, channel: discord.TextChannel):
+        def wrapped(command: UserCommand, channel: discord.TextChannel):
             config = player_config_provider(channel.guild.id)
             if not config:
                 log.debug(f'could not find config for guild id {channel.guild.id}')
@@ -166,7 +170,7 @@ def filter_player_commands(*, player_config_provider: PlayerConfigProvider, voic
 
 def create_play_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=True)
-    async def play(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
+    async def play(command: UserCommand, channel: discord.TextChannel, player_config: PlayerConfig):
         '''search for a song and add to queue'''
         await player_config.player.enqueue(command.arg)
     return play
@@ -174,7 +178,7 @@ def create_play_executor(player_config_provider: PlayerConfigProvider) -> Comman
 
 def create_skip_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=True)
-    async def skip(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
+    async def skip(command: UserCommand, channel: discord.TextChannel, player_config: PlayerConfig):
         '''skips current song, if one is playing'''
         await asyncio.gather(
             player_config.player.skip(),
@@ -192,7 +196,7 @@ async def queue_display(command_arg: str, channel: discord.TextChannel, player_c
 
 def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=False)
-    async def show_queue(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
+    async def show_queue(command: UserCommand, channel: discord.TextChannel, player_config: PlayerConfig):
         '''shows current queue'''
         await queue_display(command.arg, channel, player_config)
     return show_queue
@@ -200,7 +204,7 @@ def create_show_queue_executor(player_config_provider: PlayerConfigProvider) -> 
 
 def create_queue_remove_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=False)
-    async def queue_remove(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
+    async def queue_remove(command: UserCommand, channel: discord.TextChannel, player_config: PlayerConfig):
         """Allows the removal of a specific song from the queue by index. Usage: !remove 2"""
         await player_config.player.remove(command.arg)
         await queue_display(command.arg, channel, player_config)
@@ -209,7 +213,7 @@ def create_queue_remove_executor(player_config_provider: PlayerConfigProvider) -
 
 def create_now_playing_executor(player_config_provider: PlayerConfigProvider) -> CommandExecutor:
     @filter_player_commands(player_config_provider=player_config_provider, voice_channel_restricted=False)
-    async def now_playing(command: Command, channel: discord.TextChannel, player_config: PlayerConfig):
+    async def now_playing(command: UserCommand, channel: discord.TextChannel, player_config: PlayerConfig):
         '''Shows song currently playing'''
         if not player_config.player.now_playing_item:
             await channel.send('Nothing playing. Add a song with !play', delete_after=30)
@@ -259,7 +263,7 @@ def create_player_event_handler(text_channel: discord.TextChannel):
 
 def create_meme_executor(meme_generator: Meme) -> CommandExecutor:
     @executor(help_string=meme_generator.help_string)
-    async def run_meme(command: Command, channel: discord.abc.Messageable):
+    async def run_meme(command: UserCommand, channel: discord.abc.Messageable):
         async with channel.typing():
             async with meme_generator.generate(command.arg) as meme_image:
                 df = discord.File(meme_image, filename=meme_generator.image_filename)
@@ -267,17 +271,8 @@ def create_meme_executor(meme_generator: Meme) -> CommandExecutor:
     return run_meme
 
 
-def create_memelist_command_executor(memes: Iterable[Meme]) -> CommandExecutor:
-    aliases = ', '.join(m.aliases[0] for m in memes)
-    @executor()
-    async def send_memelist(command: Command, channel: discord.abc.Messageable):
-        '''lists all known memes'''
-        return await channel.send(f'I know these memes: {aliases}', delete_after=30)
-    return send_memelist
-
-
 @executor()
-async def roll_dice(command: Command, channel: discord.abc.Messageable):
+async def roll_dice(command: UserCommand, channel: discord.abc.Messageable):
     '''rolls dice. Example: !roll 5d6'''
     num_dice, num_sides = [int(x if x else 1) for x in command.arg.split('d')]
 
@@ -300,26 +295,30 @@ async def roll_dice(command: Command, channel: discord.abc.Messageable):
     return await channel.send(message)
 
 
-def create_help_command_executor(commands: Trie) -> CommandExecutor:
-    def format_command(aliases: Iterable[str], executor: CommandExecutor):
-        formatted_aliases = ', '.join(aliases)
-        return f'{formatted_aliases} - {executor.help_string()}'
-
-    def inverted_commands_map(commands: Mapping[str, CommandExecutor]) -> Mapping[CommandExecutor, Iterable[str]]:
-        '''assumes executors for each command are reused'''
-        inverted_map: MutableMapping[CommandExecutor, Set[str]] = {}
-        for (key, item) in commands.items():
-            alias_set = inverted_map.get(item, set())
-            alias_set.add(key)
+def create_help_command_executor(commands: Trie, *, prefix='') -> CommandExecutor:
+    def inverted_commands_map(commands: Trie, prefix: str) -> Mapping[CommandExecutor, Iterable[str]]:
+        '''assumes executors for each command are reused
+        and no dupe keys (which should be true for all Tries)
+        '''
+        inverted_map: MutableMapping[CommandExecutor, List[str]] = {}
+        for (key, item) in commands.iteritems(prefix=prefix):
+            alias_set = inverted_map.get(item, [])
+            alias_set.append(key)
             inverted_map[item] = alias_set
         return inverted_map
 
+    commands = commands.copy()
+    commands.enable_sorting()
+    inverted_commands = inverted_commands_map(commands, prefix)
+
     @executor()
-    async def help_command(command: Command, channel: discord.abc.Messageable):
+    async def help_command(command: UserCommand, channel: discord.abc.Messageable):
         '''lists all commands'''
         if len(command.arg) == 0:
-            commands_string = '\n'.join(format_command(aliases, executor) for (executor, aliases) in inverted_commands_map(commands).items())
-            return await channel.send(f'known commands are:\n{commands_string}', delete_after=5*60)
+            embed = create_embed(
+                commands=(CommandEntry(executor=executor, aliases=aliases) for (executor, aliases) in inverted_commands.items()),
+                title='Commands')
+            return await channel.send(embed=embed)
 
         command_name = command.arg if command.arg.startswith('!') else f'!{command.arg}'
         alias, executor = commands.longest_prefix(command_name)
@@ -329,13 +328,14 @@ def create_help_command_executor(commands: Trie) -> CommandExecutor:
             alias, executor = commands.longest_prefix(f'!meme {command_name[1:]}')
 
         if not alias or not executor:
-            return await channel.send(f"i don't know the command '{command_name}'", delete_after=60)
-        return await channel.send(format_command([alias], executor), delete_after=60)
+            return await channel.send(f"i don't know the command '{command_name}'")
+        return await channel.send(
+            embed=create_embed(commands=[CommandEntry(executor=executor, aliases=[alias])]))
     return help_command
 
 
 @executor()
-async def chat_stats(command: Command, channel: discord.TextChannel):
+async def chat_stats(command: UserCommand, channel: discord.TextChannel):
     '''Display stats for this channel. Optionally given # days back. Will look only look at most 10k messages
     Example: !chatstats 10 -> chat stats for the last 10 days
     '''
