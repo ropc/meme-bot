@@ -10,6 +10,5 @@ COPY assets ./assets
 COPY tests ./tests
 COPY meme_generator ./meme_generator
 COPY memebot ./memebot
-RUN poetry install --no-dev --no-interaction
 ENTRYPOINT [ "poetry", "run" ]
 CMD [ "bot" ]
