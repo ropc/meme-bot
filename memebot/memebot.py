@@ -16,6 +16,7 @@ from meme_generator import Meme, ALL_MEMES
 from .command import UserCommand, CommandExecutor, CommandEntry, executor, create_embed
 from .player import Player, PlayerABC, PlayerEvent, SearchEvent, PlayerDelegate
 from .guildconfig import GuildConfig, get_guild_config
+from .hooks import Hook, BeansHook
 
 logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
 
@@ -35,12 +36,12 @@ class PlayerConfig(BaseModel):
 
 class MemeBot(discord.Client):
 
-    def __init__(self, *, known_memes: Iterable[Meme], guild_config: str):
+    def __init__(self, *, known_memes: Iterable[Meme], guild_config: str, hooks: Iterable[Hook]):
         super().__init__()
         # TODO: consolidate this and MEME_BOT token to a single config
         self.guild_config = guild_config
-
         self.guild_player_config: MutableMapping[int, PlayerConfig] = {}
+        self.hooks = hooks
 
         # commands setup
         self.commands = CharTrie()
@@ -90,6 +91,8 @@ class MemeBot(discord.Client):
         command = self.parse_message(message)
         if command:
             await command.execute(message.channel)
+        else:
+            await asyncio.gather(*[hook.on_message(message) for hook in self.hooks])
 
     def parse_message(self, message: discord.Message) -> Optional[UserCommand]:
         command_name, command_executor = self.commands.longest_prefix(message.content)
@@ -383,7 +386,10 @@ async def chat_stats(command: UserCommand, channel: discord.TextChannel):
 
 
 def run():
-    bot = MemeBot(known_memes=ALL_MEMES, guild_config=os.getenv('MEME_BOT_GUILD_CONFIG'))
+    bot = MemeBot(
+        known_memes=ALL_MEMES,
+        guild_config=os.getenv('MEME_BOT_GUILD_CONFIG'),
+        hooks=[BeansHook()])
     bot.run(os.getenv('MEME_BOT_TOKEN'))
 
 
@@ -400,8 +406,7 @@ def run_debug():
     if args.wait:
         ptvsd.wait_for_attach()
 
-    bot = MemeBot(known_memes=ALL_MEMES, guild_config=os.getenv('MEME_BOT_GUILD_CONFIG'))
-    bot.run(os.getenv('MEME_BOT_TOKEN'))
+    run()
 
 if __name__ == "__main__":
     run()
