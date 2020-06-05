@@ -5,3 +5,4 @@ services:
         env_file:
             - prod.env
         command: [ "bot" ]
+        restart: always
