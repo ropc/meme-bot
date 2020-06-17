@@ -17,6 +17,7 @@ from .command import UserCommand, CommandExecutor, CommandEntry, executor, creat
 from .player import Player, PlayerABC, PlayerEvent, SearchEvent, PlayerDelegate
 from .guildconfig import GuildConfig, get_guild_config
 from .hooks import Hook, BeansHook
+from .quote import create_quote_executor
 
 logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
 
@@ -73,6 +74,9 @@ class MemeBot(discord.Client):
         # chat stats
         self.commands['!chatstats'] = chat_stats
         self.commands['!chat stats'] = chat_stats
+
+        # quote
+        self.commands['!quote'] = create_quote_executor(self)
 
         # help
         help_command_executor = create_help_command_executor(self.commands)
