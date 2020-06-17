@@ -4,6 +4,7 @@ import logging
 import re
 import discord
 from typing import Set
+from .quote import format_quote_embed
 
 
 log = logging.getLogger('memebot')
@@ -32,12 +33,9 @@ class BeansHook(Hook):
             await message.add_reaction('\N{no entry}')
         except discord.HTTPException:
             log.info('Could not add reaction to beans message', exc_info=True)
-        quoted_content = '> ' + message.content.replace('\n', '\n> ')
-        embed = discord.Embed(
-            title=':warning: WARNING: MESSAGE LOOKS LIKE A BEANS POST. READ AT YOUR OWN RISK :warning:',
-            description=f'{quoted_content}\n - {message.author.name}',
-            url=create_message_link(message))
-        embed.set_footer(text='Quote brought you by MORM-BET, the most reputable source for quotes. [citation needed]')
+
+        embed = format_quote_embed(message)
+        embed.title = ':warning: WARNING: MESSAGE LOOKS LIKE A BEANS POST. READ AT YOUR OWN RISK :warning:'
         await message.channel.send(embed=embed)
 
 
