@@ -12,8 +12,6 @@ from PIL import ImageDraw
 from .baseplugin import BasePlugin
 from .utils import Coordinate, find_centered_position
 
-session = aiohttp.ClientSession()
-
 class DrawImage(BasePlugin):
     position: Coordinate
     max_size: Optional[Coordinate] = None
@@ -38,9 +36,10 @@ class DrawImage(BasePlugin):
 
     @asynccontextmanager
     async def open_image(self, url): 
-        async with session.get(url) as response:
-            image = Image.open(io.BytesIO(await response.read()))
-        try:
-            yield image
-        finally:
-            image.close()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                image = Image.open(io.BytesIO(await response.read()))
+            try:
+                yield image
+            finally:
+                image.close()
