@@ -78,6 +78,11 @@ class MemeBot(discord.Client):
         # quote
         self.commands['!quote'] = create_quote_executor(self)
 
+        # out of context
+        out_of_context = create_out_of_context(self, int(os.getenv('MEME_BOT_OOC_CHANNEL_ID')))
+        self.commands['!out of context'] = out_of_context
+        self.commands['!ooc'] = out_of_context
+
         # help
         help_command_executor = create_help_command_executor(self.commands)
         self.commands['!halp'] = help_command_executor
@@ -388,6 +393,27 @@ async def chat_stats(command: UserCommand, channel: discord.TextChannel):
 
         await channel.send(file=discord.File(buffer, filename='chatstats.png'))
 
+
+def create_out_of_context(client: discord.Client, channel_id: int):
+    @executor()
+    async def out_of_context(command: UserCommand, channel: discord.TextChannel):
+        '''Posts a random image from out of context channel'''
+        ooc_channel = client.get_channel(channel_id)
+        if not ooc_channel:
+            return await channel.send('Could not find out of context channel')
+
+        async with channel.typing():
+            images: List[discord.Attachment] = []
+            async for message in ooc_channel.history(limit=10_000):
+                images.extend(message.attachments)
+
+            if len(images) == 0:
+                return await channel.send('No images to send')
+
+            random_attachment = random.choice(images)
+            attachment_file = await random_attachment.to_file()
+            await channel.send(file=attachment_file)
+    return out_of_context
 
 def run():
     bot = MemeBot(
