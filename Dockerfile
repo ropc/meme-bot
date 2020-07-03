@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -r
 RUN pip install poetry==1.0.5
 WORKDIR /tmp/meme-bot
 COPY poetry.lock pyproject.toml ./
-RUN poetry install --no-dev --no-root
+RUN poetry install -vvv --no-dev --no-root
 COPY fonts/* /usr/share/fonts/truetype/
 COPY assets ./assets
 COPY tests ./tests
