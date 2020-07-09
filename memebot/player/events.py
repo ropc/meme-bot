@@ -22,6 +22,7 @@ class PlayerEvent(BaseModel):
 
     event_type: Type
     item: PlaybackItem
+    guild_id: int
 
     @property
     def transaction_id(self) -> UUID:
@@ -42,3 +43,4 @@ class SearchEvent(BaseModel):
     event_type: Type
     keyword: str
     transaction_id: UUID
+    guild_id: int
