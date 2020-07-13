@@ -72,14 +72,9 @@ class Player(PlayerABC):
         else:
             await self._play_next()
 
-    async def remove(self, num_string: str):
-        try:
-            idx = int(num_string)
-        except ValueError:
-            return
-
-        if idx >= 0 and idx < len(self._playback_queue):
-            del self._playback_queue[idx]
+    async def remove(self, index: int):
+        if index >= 0 and index < len(self._playback_queue):
+            del self._playback_queue[index]
 
     async def _connected_voice_client(self):
         if not self._voice_client or not self._voice_client.is_connected():

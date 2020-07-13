@@ -22,20 +22,6 @@ class PlayerConfig(BaseModel):
         arbitrary_types_allowed = True
 
 
-class player_config(commands.Converter):
-    """Converter for PlayerConfig. Assumes @command.guild_only() is used"""
-
-    def __init__(self, guild_player_config: Dict[int, PlayerConfig]):
-        super().__init__()
-        self.guild_player_config = guild_player_config
-
-    def convert(self, context: commands.Context, argument):
-        config = self.guild_player_config.get(context.guild.id)
-        if not config:
-            raise commands.BadArgument(f'could not find config for guild id {context.guild.id}')
-        return config
-
-
 async def display_queue(context: commands.Context, config: PlayerConfig):
     if len(config.player.playback_queue) == 0:
         return await context.send('Nothing in queue. Add a song with !play', delete_after=30)
@@ -43,17 +29,17 @@ async def display_queue(context: commands.Context, config: PlayerConfig):
     return await context.send(f'Up next:\n{queue}', delete_after=60)
 
 
-def has_player_config(voice_restricted=False):
-    async def predicate(ctx):
-        if not isinstance(ctx.cog, CogPlayerConfigChecker):
+def has_player_config(*, voice_restricted=False):
+    async def predicate(context: commands.Context):
+        if not isinstance(context.cog, CogPlayerConfigChecker):
             return False
-        return await ctx.cog.internal_has_player_config(ctx, voice_restricted=voice_restricted)
+        return context.cog.verify_config(context, voice_restricted=voice_restricted)
     return commands.check(predicate)
 
 
 class CogPlayerConfigChecker(abc.ABC):
     @abc.abstractmethod
-    async def internal_has_player_config(self, context: commands.Context, *, voice_restricted=False):
+    def verify_config(self, context: commands.Context, *, voice_restricted=False):
         pass
 
 
@@ -101,9 +87,7 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
     @has_player_config(voice_restricted=True)
     async def play(self, context: commands.Context, *, arg: str):
         '''search for a song and add to queue'''
-        config = await self._get_config(context, voice_channel_restricted=True)
-        if not config:
-            return
+        config = self._get_config(context)
         await config.player.enqueue(arg)
 
     @commands.command()
@@ -111,9 +95,7 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
     @has_player_config(voice_restricted=True)
     async def skip(self, context: commands.Context):
         '''skips current song, if one is playing'''
-        config = await self._get_config(context, voice_channel_restricted=True)
-        if not config:
-            return
+        config = self._get_config(context)
         await asyncio.gather(
             config.player.skip(),
             context.send('Skipping...', delete_after=60)
@@ -124,9 +106,7 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
     @has_player_config()
     async def queue(self, context: commands.Context):
         '''shows current queue'''
-        config = await self._get_config(context, voice_channel_restricted=True)
-        if not config:
-            return
+        config = self._get_config(context)
         await display_queue(context.channel, config)
 
     @commands.command()
@@ -134,9 +114,7 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
     @has_player_config()
     async def remove(self, context: commands.Context, number: int):
         """Allows the removal of a specific song from the queue by index. Usage: !remove 2"""
-        config = await self._get_config(context, voice_channel_restricted=True)
-        if not config:
-            return
+        config = self._get_config(context)
         await config.player.remove(number)
         await display_queue(context, config)
 
@@ -145,30 +123,12 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
     @has_player_config()
     async def now_playing(self, context: commands.Context):
         '''Shows song currently playing'''
-        config = await self._get_config(context, voice_channel_restricted=True)
-        if not config:
-            return
+        config = self._get_config(context)
         if not config.player.now_playing_item:
             await context.send('Nothing playing. Add a song with !play', delete_after=30)
             return
         title = config.player.now_playing_item.title
         await context.send(f'Now playing: {title}', delete_after=60)
-
-    async def _get_config(self, context: commands.Context, voice_channel_restricted=False):
-        config = self.guild_player_config.get(context.guild.id)
-        if not config:
-            log.debug(f'could not find config for guild id {context.guild.id}')
-            await context.send(f'Player not configured for this server')
-            return None
-        if config.text_channel.id != context.channel.id:
-            log.debug(f'player command in guild {context.guild.id} did not come from PlayerConfig.text_channel_id {config.text_channel.id}')
-            await context.send(f'Command {context.message.content!r} must be made in #{config.text_channel.name}')
-            return None
-        if voice_channel_restricted and context.author.id not in (member.id for member in config.voice_channel.members):
-            log.debug(f'initiator not in voice channel')
-            await context.send(f'User must be in voice channel {config.voice_channel.name!r} to use this command: {context.message.content!r}')
-            return None
-        return config
 
     # Player Delegate methods
 
@@ -209,10 +169,13 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
         if message:
             self.known_messages[transaction_id] = message
 
+    def _get_config(self, context: commands.Context):
+        return self.guild_player_config.get(context.guild.id)
+
     # CogPlayerConfigChecker
 
-    async def internal_has_player_config(self, context: commands.Context, *, voice_restricted=False):
-        config = self.guild_player_config.get(context.guild.id)
+    def verify_config(self, context: commands.Context, *, voice_restricted=False):
+        config = self._get_config(context)
         if not config:
             log.debug(f'could not find config for guild id {context.guild.id}')
             # return channel.send(f'Player not configured for this server')
