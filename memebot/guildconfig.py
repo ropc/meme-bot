@@ -8,8 +8,6 @@ class GuildConfig(BaseModel):
     text_channel_id: int
 
 def get_guild_config(guild_config_dict) -> Optional[GuildConfig]:
-    # config = json.loads(config_string)
-    # guild_config_dict: Dict = config.get('guild_configs', {}).get(str(guild_id), {})
     voice_channel = guild_config_dict.get('bot_voice_channel')
     text_channel = guild_config_dict.get('bot_text_channel')
     if voice_channel and text_channel:
