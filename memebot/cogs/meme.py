@@ -4,25 +4,32 @@ from discord.ext import commands
 from meme_generator import ALL_MEMES, Meme as MemeGenerator
 
 
-class Meme(commands.Cog):
+class MemeGroup(commands.Group):
+    def __init__(self, *args, **attrs):
+        super().__init__(*args, **attrs)
+        self.all_commands = pygtrie.CharTrie(self.all_commands)
 
-    def __init__(self):
+
+class Meme(commands.Cog):
+    def __init__(self, bot: commands.Bot):
         super().__init__()
-        self.meme_generators = pygtrie.CharTrie()
+        self.meme.all_commands = pygtrie.CharTrie(self.meme.all_commands)
 
         for meme_generator in ALL_MEMES:
-            for alias in meme_generator.aliases:
-                self.meme_generators[alias] = meme_generator
+            _create_meme_command(self.meme, meme_generator)
 
-    @commands.command()
-    async def meme(self, context: commands.Context, *, text: str):
-        meme_alias, meme_generator = self.meme_generators.longest_prefix(text)
-        if meme_alias is None:
-            return await context.send("i don't know that meme")
+    @commands.group(cls=MemeGroup, aliases=['memelist', 'meme list'])
+    async def meme(self, context: commands.Context):
+        '''list memes'''
+        if not context.invoked_subcommand:
+            return await context.send_help(self.meme)
 
-        meme_text = text[len(meme_alias):].strip()
 
+def _create_meme_command(group: commands.Group, meme_generator: MemeGenerator):
+    generator_name = meme_generator.aliases[0].replace(' ', '_') + '_executor'
+    @group.command(help=meme_generator.help_string, name=generator_name, aliases=meme_generator.aliases)
+    async def meme_executor(context: commands.Context, *, text: str):
         async with context.typing():
-            async with meme_generator.generate(meme_text) as meme_image:
+            async with meme_generator.generate(text) as meme_image:
                 df = discord.File(meme_image, filename=meme_generator.image_filename)
                 return await context.send(file=df)
