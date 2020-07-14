@@ -8,6 +8,7 @@ from typing import Dict, Iterable, Callable, Awaitable, Optional, MutableMapping
 from .guildconfig import get_guild_config_dict
 from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme
 from .cogs.meme import MemeGroup
+from .error import MemeBotError
 from .help import EmbedHelpCommand, add_single_command_field
 
 logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
@@ -35,14 +36,18 @@ class MemeBot(commands.Bot):
 
     async def on_command_error(self, context: commands.Context, exception: commands.CommandError):
         log.error(f'command error for {context.command}', exc_info=exception)
-        if context.command:
+        if isinstance(exception, MemeBotError) and len(exception.args) > 0 and isinstance(exception.args[0], str):
+            embed = discord.Embed(
+                title=exception.args[0],
+                description=f'Input: `{context.message.content}`')
+            await context.send(embed=embed)
+        elif context.command:
             embed = discord.Embed(
                 title='Something went wrong :cry:',
                 description=f'Input: `{context.message.content}`')
             prefix = context.prefix + context.command.full_parent_name + ' ' if context.command.full_parent_name else context.prefix
             add_single_command_field(embed, context.command, prefix=prefix)
             await context.send(embed=embed)
-        return super().on_command_error(context, exception)
 
     async def get_context(self, message, *, cls=commands.Context):
         context = await super().get_context(message, cls=cls)

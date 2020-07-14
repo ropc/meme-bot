@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from typing import Optional, Callable, Dict
 from memebot.guildconfig import GuildConfig
 from memebot.player import Player, PlayerABC, PlayerDelegate, PlayerEvent, SearchEvent
+from memebot.error import MemeBotCheckError
 
 
 log = logging.getLogger('memebot')
@@ -178,14 +179,11 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
         config = self._get_config(context)
         if not config:
             log.debug(f'could not find config for guild id {context.guild.id}')
-            # return channel.send(f'Player not configured for this server')
-            return False
+            raise MemeBotCheckError('Player not configured for this server')
         if config.text_channel.id != context.channel.id:
             log.debug(f'player command in guild {context.guild.id} did not come from PlayerConfig.text_channel_id {config.text_channel.id}')
-            # return channel.send(f'Command {command.raw_command!r} must be made in #{config.text_channel.name}')
-            return False
+            raise MemeBotCheckError(f'Command must be used in #{config.text_channel.name}')
         if voice_restricted and context.author.id not in (member.id for member in config.voice_channel.members):
-            log.debug(f'initiator not in voice channel')
-            # return channel.send(f'User must be in voice channel {config.voice_channel.name!r} to use this command: {command.raw_command!r}')
-            return False
+            log.debug(f'user {context.author.id} not in voice channel {config.voice_channel.id} for guild {context.guild.id}')
+            raise MemeBotCheckError(f'User must be in voice channel {config.voice_channel.name!r} to use this command')
         return True
