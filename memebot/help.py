@@ -46,7 +46,6 @@ class EmbedHelpCommand(commands.HelpCommand):
         if cog.description:
             embed.description = cog.description
 
-        # filtered = await self.filter_commands(cog.get_commands(), sort=True)
         for command in cog.get_commands():
             embed.add_field(name=self.get_command_signature(command), value=command.short_doc or '...', inline=False)
 
