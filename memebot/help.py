@@ -1,7 +1,7 @@
 # Modified from https://gist.github.com/Rapptz/31a346ed1eb545ddeb0d451d81a60b3b
 import discord
 from discord.ext import commands
-from typing import Union
+from typing import Union, Mapping, List
 
 
 class EmbedHelpCommand(commands.HelpCommand):
@@ -23,16 +23,20 @@ class EmbedHelpCommand(commands.HelpCommand):
     def get_command_signature(self, command: commands.Command):
         return f'{command.qualified_name} {command.signature}'
 
-    async def send_bot_help(self, mapping):
+    async def send_bot_help(self, mapping: Mapping[commands.Cog, List[commands.Command]]):
         embed = discord.Embed(title='Commands')
         description = self.context.bot.description
         if description:
             embed.description = description
 
-        for cog, command_list in mapping.items():
-            filtered_commands = await self.filter_commands(command_list, sort=True)
-            for command in filtered_commands:
-                await self._recursive_add_command_field(embed, command)
+        all_filtered_commands: List[commands.Command] = []
+        for command_list in mapping.values():
+            all_filtered_commands.extend(command_list)
+
+        all_filtered_commands.sort(key=lambda c: c.qualified_name)
+
+        for command in all_filtered_commands:
+            recursive_add_command_field(embed, command, prefix=self.clean_prefix)
 
         embed.set_footer(text=self.get_ending_note())
         await self.get_destination().send(embed=embed)
@@ -42,19 +46,17 @@ class EmbedHelpCommand(commands.HelpCommand):
         if cog.description:
             embed.description = cog.description
 
-        filtered = await self.filter_commands(cog.get_commands(), sort=True)
-        for command in filtered:
+        # filtered = await self.filter_commands(cog.get_commands(), sort=True)
+        for command in cog.get_commands():
             embed.add_field(name=self.get_command_signature(command), value=command.short_doc or '...', inline=False)
 
         embed.set_footer(text=self.get_ending_note())
         await self.get_destination().send(embed=embed)
 
     async def send_group_help(self, group: Union[commands.Command, commands.Group]):
-        embed = discord.Embed(title=group.qualified_name)
-        if group.help:
-            embed.description = group.help
+        embed = discord.Embed()
 
-        await self._recursive_add_command_field(embed, group)
+        recursive_add_command_field(embed, group, prefix=self.clean_prefix)
 
         embed.set_footer(text=self.get_ending_note())
         await self.get_destination().send(embed=embed)
@@ -64,17 +66,20 @@ class EmbedHelpCommand(commands.HelpCommand):
     # If you want to make regular command help look different then override it
     send_command_help = send_group_help
 
-    async def _recursive_add_command_field(self, embed: discord.Embed, command: Union[commands.Command, commands.Group], prefix=''):
-        if not isinstance(command, commands.Group):
-            _add_single_command_field(embed, command, prefix=prefix)
-            return
-        _add_single_command_field(embed, command, prefix=prefix)
-        filtered_commands = await self.filter_commands(command.commands)
-        for subcommand in filtered_commands:
-            await self._recursive_add_command_field(embed, subcommand, prefix=command.qualified_name + ' ')
+
+def recursive_add_command_field(embed: discord.Embed, command: Union[commands.Command, commands.Group], prefix=''):
+    if not isinstance(command, commands.Group):
+        add_single_command_field(embed, command, prefix=prefix)
+        return
+    add_single_command_field(embed, command, prefix=prefix)
+    for subcommand in sorted(command.commands, key=lambda c: c.qualified_name):
+        recursive_add_command_field(embed, subcommand, prefix=prefix + command.qualified_name + ' ')
 
 
-def _add_single_command_field(embed: discord.Embed, command: commands.Command, prefix=''):
-    name = ', '.join(f'**{prefix}{a}**' for a in command.aliases) if command.aliases else command.qualified_name
+def add_single_command_field(embed: discord.Embed, command: commands.Command, prefix=''):
+    if len(command.aliases) == 0:
+        name = f'**{prefix}{command.qualified_name}**'
+    else:
+        name = ', '.join(f'**{prefix}{a}**' for a in command.aliases)
     value = '\n'.join(line.strip() for line in command.short_doc.splitlines())
     embed.add_field(name=name, value=value, inline=False)
