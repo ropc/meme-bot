@@ -86,7 +86,7 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
     @commands.guild_only()
     @has_player_config(voice_restricted=True)
     async def play(self, context: commands.Context, *, arg: str):
-        '''search for a song and add to queue'''
+        '''Search for a song and add to queue'''
         config = self._get_config(context)
         await config.player.enqueue(arg)
 
@@ -94,7 +94,7 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
     @commands.guild_only()
     @has_player_config(voice_restricted=True)
     async def skip(self, context: commands.Context):
-        '''skips current song, if one is playing'''
+        '''Skips current song, if one is playing'''
         config = self._get_config(context)
         await asyncio.gather(
             config.player.skip(),
@@ -105,7 +105,7 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
     @commands.guild_only()
     @has_player_config()
     async def queue(self, context: commands.Context):
-        '''shows current queue'''
+        '''Shows current queue'''
         config = self._get_config(context)
         await display_queue(context.channel, config)
 
