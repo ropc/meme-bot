@@ -53,7 +53,7 @@ class MemeBot(commands.Bot):
         context = await super().get_context(message, cls=cls)
         new_command, alias, full_string = None, None, None
         # this is all pretty hacky tbh
-        if context.command is None and isinstance(self.all_commands, CharTrie):
+        if context.prefix and context.command is None and isinstance(self.all_commands, CharTrie):
             no_prefix_content = message.content[len(context.prefix):]
             alias, new_command = self.all_commands.longest_prefix(no_prefix_content)
             full_string = context.prefix + alias if alias else None
