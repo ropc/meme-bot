@@ -28,7 +28,8 @@ class Player(PlayerABC):
         lock: asyncio.Lock=None, loop: asyncio.AbstractEventLoop=None,
         download_url_provider: DownloadUrlProvider=None,
         playback_item_provider: PlaybackItemProvider=None,
-        item_downloader: ItemDownloader=None):
+        item_downloader: ItemDownloader=None,
+        guild_id: int):
         self._voice_channel = voice_channel
         self.delegate = delegate
         self._voice_client: Optional[discord.VoiceClient] = voice_client
@@ -39,6 +40,7 @@ class Player(PlayerABC):
         self._playback_item_provider: PlaybackItemProvider = playback_item_provider or YoutubePlaybackItemProvider()
         self._item_downloader: ItemDownloader = item_downloader or YoutubeItemDownloader()
         self.now_playing_item: Optional[PlaybackItem] = None
+        self.guild_id = guild_id
 
     @property
     def playback_queue(self):
@@ -53,7 +55,7 @@ class Player(PlayerABC):
             item = await self._playback_item_provider.provide((url, transaction_id))
             self._playback_queue.append(item)
 
-        await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.ENQUEUED, item=item))
+        await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.ENQUEUED, item=item, guild_id=self.guild_id))
 
         await self._download(item)
 
@@ -70,14 +72,9 @@ class Player(PlayerABC):
         else:
             await self._play_next()
 
-    async def remove(self, num_string: str):
-        try:
-            idx = int(num_string)
-        except ValueError:
-            return
-
-        if idx >= 0 and idx < len(self._playback_queue):
-            del self._playback_queue[idx]
+    async def remove(self, index: int):
+        if index >= 0 and index < len(self._playback_queue):
+            del self._playback_queue[index]
 
     async def _connected_voice_client(self):
         if not self._voice_client or not self._voice_client.is_connected():
@@ -100,11 +97,11 @@ class Player(PlayerABC):
             voice_client.play(discord.FFmpegPCMAudio(item.filepath), after=self._create_after(item))
         except discord.ClientException as e:
             log.warning(f'Error when trying to play {item.title}', exc_info=True)  # this shouldn't happen
-            await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.PLAYBACK_ERROR, item=item))
+            await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.PLAYBACK_ERROR, item=item, guild_id=self.guild_id))
             return
 
         self.now_playing_item = item
-        await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.STARTED, item=item))
+        await self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.STARTED, item=item, guild_id=self.guild_id))
 
     def _create_after(self, item: PlaybackItem):
         async def try_disconnect():
@@ -120,7 +117,7 @@ class Player(PlayerABC):
             was_last_item = len(self._playback_queue) == 0
             log.debug(f'finished playback. event_type: {event_type} was_last_item: {was_last_item}')
             await asyncio.gather(
-                self.delegate.player_event(self, PlayerEvent(event_type=event_type, item=item)),
+                self.delegate.player_event(self, PlayerEvent(event_type=event_type, item=item, guild_id=self.guild_id)),
                 self._play_next()
             )
             # technically, this could be replayed. either now or in the future.
@@ -139,17 +136,17 @@ class Player(PlayerABC):
     async def _download(self, item: PlaybackItem):
         state = await self._item_downloader.download(item)
         if state.is_error():
-            self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.DOWNLOAD_ERROR, item=item))
+            self.delegate.player_event(self, PlayerEvent(event_type=PlayerEvent.Type.DOWNLOAD_ERROR, item=item, guild_id=self.guild_id))
 
     async def _search(self, keyword: str, transaction_id: uuid.UUID) -> Optional[str]:
         '''Searches for keyword and emits `SearchEvent`s'''
         result, _ = await asyncio.gather(
             self._download_url_provider.provide(keyword),
-            self.delegate.search_event(self, SearchEvent(event_type=SearchEvent.Type.SEARCHING, keyword=keyword, transaction_id=transaction_id))
+            self.delegate.search_event(self, SearchEvent(event_type=SearchEvent.Type.SEARCHING, keyword=keyword, transaction_id=transaction_id, guild_id=self.guild_id))
         )
 
         if not result:
-            await self.delegate.search_event(self, SearchEvent(event_type=SearchEvent.Type.SEARCH_ERROR, keyword=keyword, transaction_id=transaction_id))
+            await self.delegate.search_event(self, SearchEvent(event_type=SearchEvent.Type.SEARCH_ERROR, keyword=keyword, transaction_id=transaction_id, guild_id=self.guild_id))
             return None
 
         return result

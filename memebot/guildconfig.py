@@ -7,11 +7,14 @@ class GuildConfig(BaseModel):
     voice_channel_id: int
     text_channel_id: int
 
-def get_guild_config(config_string: str, guild_id: int) -> Optional[GuildConfig]:
-    config = json.loads(config_string)
-    guild_config_dict: Dict = config.get('guild_configs', {}).get(str(guild_id), {})
+def get_guild_config(guild_config_dict) -> Optional[GuildConfig]:
     voice_channel = guild_config_dict.get('bot_voice_channel')
     text_channel = guild_config_dict.get('bot_text_channel')
     if voice_channel and text_channel:
         return GuildConfig(voice_channel_id=voice_channel, text_channel_id=text_channel)
     return None
+
+def get_guild_config_dict(config_string: str) -> Dict[int, GuildConfig]:
+    config = json.loads(config_string)
+    guild_configs = config.get('guild_configs', {})
+    return {int(gid): guild_config for (gid, config_dict) in guild_configs.items() if (guild_config := get_guild_config(config_dict))}
