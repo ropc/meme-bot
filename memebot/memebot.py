@@ -6,7 +6,7 @@ from discord.ext.commands.view import StringView
 from pygtrie import CharTrie
 from typing import Dict, Iterable, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping, List
 from .guildconfig import get_guild_config_dict
-from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme
+from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme, Meta
 from .cogs.meme import MemeGroup
 from .error import MemeBotError
 from .help import EmbedHelpCommand, add_single_command_field
@@ -25,14 +25,17 @@ class MemeBot(commands.Bot):
         # make sure this is a Trie
         self.all_commands = CharTrie(self.all_commands)
 
+        config = get_guild_config_dict(os.getenv('MEME_BOT_GUILD_CONFIG', '{}'))
+
         # cogs setup
         self.add_cog(Quote())
         self.add_cog(OutOfContext(self, int(os.getenv('MEME_BOT_OOC_CHANNEL_ID', 0))))
         self.add_cog(ChatStats())
         self.add_cog(RollDice())
-        self.add_cog(Player(self, get_guild_config_dict(os.getenv('MEME_BOT_GUILD_CONFIG', '{}'))))
+        self.add_cog(Player(self, config))
         self.add_cog(Meme(self))
         self.add_cog(Beans())
+        self.add_cog(Meta(self, config))
 
     async def on_command_error(self, context: commands.Context, exception: commands.CommandError):
         log.error(f'command error for {context.command}', exc_info=exception)
