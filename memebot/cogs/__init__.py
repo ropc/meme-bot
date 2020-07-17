@@ -5,3 +5,4 @@ from .rolldice import RollDice
 from .player import PlayerCog as Player
 from .meme import Meme
 from .beans import Beans
+from .meta import Meta
