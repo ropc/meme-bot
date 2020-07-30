@@ -25,8 +25,8 @@ class ChatStats(commands.Cog):
 
             with plt.xkcd():
                 fig, axs = plt.subplots()  # type: plt.Figure, plt.Axes
-                # no need to plot zeros
-                names = sorted((key for (key, value) in counts.items() if value > 0), key=lambda x: len(x))
+
+                names = sorted(counts.keys(), key=lambda x: len(x))
                 values = [counts[n] for n in names]
 
                 axs.bar(names, values)
