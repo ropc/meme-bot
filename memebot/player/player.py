@@ -60,7 +60,7 @@ class Player(PlayerABC):
         await self._download(item)
 
         if not self._voice_client or not self._voice_client.is_playing():
-            self._loop.create_task(self._play_next())
+            await self._play_next()
 
     async def skip(self):
         log.debug(f'skipping current song (if any) on {self._voice_channel}')
