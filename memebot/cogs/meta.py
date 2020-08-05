@@ -35,6 +35,7 @@ class Meta(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def restart(self, context: commands.Context):
+        """restart bot"""
         log.warning('restart command called')
         await context.send(self.restart_message)
         sys.exit(1)

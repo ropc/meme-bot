@@ -80,5 +80,5 @@ def add_single_command_field(embed: discord.Embed, command: commands.Command, pr
         name = f'**{prefix}{command.qualified_name}**'
     else:
         name = ', '.join(f'**{prefix}{a}**' for a in command.aliases)
-    value = '\n'.join(line.strip() for line in command.short_doc.splitlines())
+    value = '\n'.join(line.strip() for line in command.short_doc.splitlines()) or '[no description]'
     embed.add_field(name=name, value=value, inline=False)
