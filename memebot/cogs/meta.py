@@ -45,9 +45,9 @@ class Meta(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def logs(self, context: commands.Context, lines: int = 20):
-        '''output last lines of log'''
+    async def logs(self, context: commands.Context, lines: int = 20, offset: int = 0):
+        '''Output last lines of log. Usage: !logs [lines=20] [offset=0]'''
         with open(self.log_filename) as f:
-            log_tail = tailer.tail(f, lines=lines)
-            formatted_log_tail = '\n'.join(log_tail)
-            await context.send(f'\n```\n{formatted_log_tail}'[-1997:] + '```')  # 2k char limit
+            log_tail = tailer.tail(f, lines=lines + offset)[:lines]
+            formatted_log_tail = '\n'.join(log_tail)[-1994:] # 2k char limit
+            await context.send(f'```{formatted_log_tail}```')
