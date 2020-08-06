@@ -23,6 +23,7 @@ youtube-dl = "^2020.3.24"
 lxml = "^4.5.0"
 matplotlib = "^3.2.1"
 ptvsd = "^4.3.2"
+tailer = "^0.4.1"
 
 [tool.poetry.dev-dependencies]
 ipython = "^7.7"

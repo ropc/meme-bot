@@ -528,6 +528,14 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 version = "1.15.0"
 
 [[package]]
+category = "main"
+description = "Python tail is a simple implementation of GNU tail and head."
+name = "tailer"
+optional = false
+python-versions = "*"
+version = "0.4.1"
+
+[[package]]
 category = "dev"
 description = "Traitlets Python config system"
 name = "traitlets"
@@ -609,7 +617,7 @@ python-versions = "*"
 version = "2020.5.8"
 
 [metadata]
-content-hash = "16232310f4dbde8a251bc471916aace9c6ea5058eb1113129cf225bd6edb557f"
+content-hash = "2cc37df3d58201d221d9304766006c445d09a33e41489977d0352c850059c588"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -1018,6 +1026,9 @@ rope = [
 six = [
     {file = "six-1.15.0-py2.py3-none-any.whl", hash = "sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced"},
     {file = "six-1.15.0.tar.gz", hash = "sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259"},
+]
+tailer = [
+    {file = "tailer-0.4.1.tar.gz", hash = "sha256:78d60f23a1b8a2d32f400b3c8c06b01142ac7841b75d8a1efcb33515877ba531"},
 ]
 traitlets = [
     {file = "traitlets-4.3.3-py2.py3-none-any.whl", hash = "sha256:70b4c6a1d9019d7b4f6846832288f86998aa3b9207c6821f3578a6a6a467fe44"},

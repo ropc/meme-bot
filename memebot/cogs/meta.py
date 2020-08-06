@@ -5,8 +5,10 @@ import os
 import random
 import sys
 import discord
+import tailer
 from discord.ext import commands
 from memebot.guildconfig import MemeBotConfig
+from typing import Optional
 
 
 log = logging.getLogger('memebot')
@@ -14,11 +16,12 @@ log = logging.getLogger('memebot')
 
 class Meta(commands.Cog):
 
-    def __init__(self, bot: commands.Bot, config: MemeBotConfig):
+    def __init__(self, bot: commands.Bot, config: MemeBotConfig, log_filename: str):
         super().__init__()
         self.bot = bot
         self.config = config
         self.restart_message = 'Restarting...'
+        self.log_filename = log_filename
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -39,3 +42,12 @@ class Meta(commands.Cog):
         log.warning('restart command called')
         await context.send(self.restart_message)
         sys.exit(1)
+
+    @commands.command()
+    @commands.is_owner()
+    async def logs(self, context: commands.Context, lines: int = 20):
+        '''output last lines of log'''
+        with open(self.log_filename) as f:
+            log_tail = tailer.tail(f, lines=lines)
+            formatted_log_tail = '\n'.join(log_tail)
+            await context.send(f'\n```\n{formatted_log_tail}'[-1997:] + '```')  # 2k char limit

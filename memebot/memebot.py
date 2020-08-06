@@ -11,9 +11,17 @@ from .cogs.meme import MemeGroup
 from .error import MemeBotError
 from .help import EmbedHelpCommand, add_single_command_field
 
-logging.basicConfig(format='%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s')
 
+LOG_FILE = '/tmp/memebot.log'
+LOG_FORMAT = '%(asctime)s [%(name)s] [%(levelname)s] [%(filename)s:%(lineno)d]: %(message)s'
+
+logging.basicConfig(format=LOG_FORMAT)
 logging.getLogger().setLevel(logging.INFO)
+
+file_handler = logging.FileHandler(LOG_FILE)
+file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+logging.getLogger().addHandler(file_handler)
+
 log = logging.getLogger('memebot')
 log.setLevel(logging.DEBUG)
 
@@ -35,7 +43,7 @@ class MemeBot(commands.Bot):
         self.add_cog(Player(self, config))
         self.add_cog(Meme(self))
         self.add_cog(Beans())
-        self.add_cog(Meta(self, config))
+        self.add_cog(Meta(self, config, LOG_FILE))
 
     async def on_command_error(self, context: commands.Context, exception: commands.CommandError):
         log.error(f'command error for {context.command}', exc_info=exception)
