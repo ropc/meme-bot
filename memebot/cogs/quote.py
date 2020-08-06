@@ -6,7 +6,7 @@ from discord.ext import commands
 class Quote(commands.Cog):
 
     @commands.command()
-    async def quote(self, context: commands.Context, *, arg: str):
+    async def quote(self, context: commands.Context, arg: str):
         '''Quote a message. Usage: !quote <message id or message link>'''
         if (match := re.match(r'https?://discord(app)?\.com/channels/(\d+)/(\d+)/(\d+)', arg)):
             guild_id = int(match.group(2))
