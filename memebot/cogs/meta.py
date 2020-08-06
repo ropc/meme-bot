@@ -25,7 +25,7 @@ class Meta(commands.Cog):
         def is_own_restart_message(message: discord.Message):
             return message.author.id == self.bot.user.id and message.content == self.restart_message
 
-        five_min_ago = datetime.datetime.now() - datetime.timedelta(minutes=5)
+        five_min_ago = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
         guild_text_channels = [self.bot.get_channel(config.text_channel_id) for config in self.config.values()]
         for text_channel in guild_text_channels:
             recent_restart_messages = await text_channel.history(limit=20, after=five_min_ago).filter(is_own_restart_message).flatten()
@@ -35,7 +35,7 @@ class Meta(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def restart(self, context: commands.Context):
-        """restart bot"""
+        '''restart bot'''
         log.warning('restart command called')
         await context.send(self.restart_message)
         sys.exit(1)
