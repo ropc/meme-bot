@@ -27,7 +27,7 @@ tailer = "^0.4.1"
 
 [tool.poetry.dev-dependencies]
 ipython = "^7.7"
-rope = "^0.14.0"
+rope = "^0.18.0"
 mypy = "^0.780"
 requests = "^2.23.0"
 pytest = "^5.4.1"
