@@ -143,10 +143,14 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
             message = await config.text_channel.send(f'Added to queue: {event.item.title}')
         elif event.event_type == PlayerEvent.Type.STARTED:
             await config.text_channel.send(f'Now playing: {event.item.title}')
+            await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=event.item.title))
         elif event.event_type == PlayerEvent.Type.PLAYBACK_ERROR:
             await config.text_channel.send(f'error when trying to play {event.item.title} =(')
+            await self.bot.change_presence()
         elif event.event_type == PlayerEvent.Type.DOWNLOAD_ERROR:
             await config.text_channel.send(f'error when trying to download {event.item.title} =(')
+        elif event.event_type == PlayerEvent.Type.FINISHED:
+            await self.bot.change_presence()
 
         await self._delete_previous_and_cache(event.transaction_id, message)
 
