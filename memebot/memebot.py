@@ -6,7 +6,7 @@ from discord.ext.commands.view import StringView
 from pygtrie import CharTrie
 from typing import Dict, Iterable, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping, List
 from .guildconfig import get_guild_config_dict
-from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme, Meta, WolframAlpha
+from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme, Meta, TarotCard, WolframAlpha
 from .cogs.meme import MemeGroup
 from .error import MemeBotError
 from .help import EmbedHelpCommand, add_single_command_field
@@ -45,6 +45,7 @@ class MemeBot(commands.Bot):
         self.add_cog(Beans())
         self.add_cog(Meta(self, config, LOG_FILE))
         self.add_cog(WolframAlpha(os.getenv('MEME_BOT_WOLFRAM_ALPHA_KEY')))
+        self.add_cog(TarotCard())
 
     async def on_command_error(self, context: commands.Context, exception: commands.CommandError):
         log.error(f'command error for {context.command}', exc_info=exception)
