@@ -32,10 +32,40 @@ ORIENTATIONS = [
 ]
 
 class TarotCard(commands.Cog):
+    def append_minor_arcana(self):
+        SUITS = [
+            "Wands",
+            "Pentacles",
+            "Chalices",
+            "Swords"
+        ]
+
+        ROYALTY_CARDS = {
+            0: "Ace",
+            10: "Page",
+            11: "Knight",
+            12: "Queen",
+            13: "King"
+        }
+
+        minor_arcana = []
+        for i in range(56):
+            if (card_number := i % 14) in ROYALTY_CARDS.keys():
+                card_name = ROYALTY_CARDS[card_number]
+            else:
+                card_name = str(card_number + 1)
+            
+            minor_arcana.append(
+                card_name + " of " + SUITS[i % 4]
+            )
+        
+        CARDS.extend(minor_arcana)
+
     @commands.command()
     async def tarot(self, context: commands.Context):
         """deals random Tarot cards and their orientation."""
-        
+
+        self.append_minor_arcana()
         cards = random.sample(CARDS, 3)
         await context.send(
             f"You are dealt **{cards[0] + random.choice(ORIENTATIONS)}**," +
