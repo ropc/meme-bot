@@ -31,8 +31,7 @@ ORIENTATIONS = [
     ", inverted"
 ]
 
-class TarotCard(commands.Cog):
-    def append_minor_arcana(self):
+def append_minor_arcana():
         SUITS = [
             "Wands",
             "Pentacles",
@@ -61,11 +60,12 @@ class TarotCard(commands.Cog):
         
         CARDS.extend(minor_arcana)
 
+append_minor_arcana()
+
+class TarotCard(commands.Cog):
     @commands.command()
     async def tarot(self, context: commands.Context):
         """deals random Tarot cards and their orientation."""
-
-        self.append_minor_arcana()
         cards = random.sample(CARDS, 3)
         await context.send(
             f"You are dealt **{cards[0] + random.choice(ORIENTATIONS)}**," +
