@@ -55,7 +55,7 @@ def append_minor_arcana():
                 card_name = str(card_number + 1)
             
             minor_arcana.append(
-                card_name + " of " + SUITS[i % 4]
+                card_name + " of " + SUITS[i // 14]
             )
         
         CARDS.extend(minor_arcana)
