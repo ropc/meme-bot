@@ -34,8 +34,9 @@ ORIENTATIONS = [
 class TarotCard(commands.Cog):
     @commands.command()
     async def tarot(self, context: commands.Context):
-        cards = random.sample(CARDS, 3)
         """deals random Tarot cards and their orientation."""
+        
+        cards = random.sample(CARDS, 3)
         await context.send(
             f"You are dealt **{cards[0] + random.choice(ORIENTATIONS)}**," +
             f" **{cards[1] + random.choice(ORIENTATIONS)}**," +
