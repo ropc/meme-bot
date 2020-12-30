@@ -1,13 +1,17 @@
 import random
+from typing import Optional
 from discord.ext import commands
 
 
 class RollDice(commands.Cog):
 
     @commands.command(aliases=['r', 'roll'])
-    async def roll_dice(self, context: commands.Context, arg: str):
-        '''rolls dice. Example: !roll 5d6'''
-        num_dice, num_sides = [int(x if x else 1) for x in arg.split('d')]
+    async def roll_dice(self, context: commands.Context, arg: Optional[str]):
+        '''rolls dice. Example: !roll 5d6 (defaults to d20)'''
+        if not arg:
+            num_dice, num_sides = 1, 20
+        else:
+            num_dice, num_sides = [int(x if x else 1) for x in arg.split('d')]
 
         # soft limit. (2k - 16) hardcoded characters in message
         if num_dice * num_sides.bit_length() > 1984:
