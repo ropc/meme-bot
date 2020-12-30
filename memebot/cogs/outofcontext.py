@@ -15,6 +15,8 @@ class OutOfContext(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         channel = self.bot.get_channel(self.channel_id)
+        if not channel:
+            return
         attachments: MutableSequence[discord.Attachment] = []
         async for message in channel.history(limit=10_000):
             attachments.extend(message.attachments)
