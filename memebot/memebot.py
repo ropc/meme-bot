@@ -39,7 +39,7 @@ class MemeBot(commands.Bot):
         self.add_cog(Quote())
         self.add_cog(OutOfContext(self, int(os.getenv('MEME_BOT_OOC_CHANNEL_ID', 0))))
         self.add_cog(ChatStats())
-        self.add_cog(RollDice())
+        self.add_cog(RollDice(int(x) for x in os.getenv('MEME_BOT_UNLUCKY_ROLL_IDS', '').split(',') if x))
         self.add_cog(Player(self, config))
         self.add_cog(Meme(self))
         self.add_cog(Beans())

@@ -1,9 +1,12 @@
 import random
-from typing import Optional
+from typing import Optional, Iterable
 from discord.ext import commands
 
 
 class RollDice(commands.Cog):
+
+    def __init__(self, unlucky: Iterable[int]):
+        self.unlucky = set(unlucky)
 
     @commands.command(aliases=['r', 'roll'])
     async def roll_dice(self, context: commands.Context, arg: Optional[str]):
@@ -17,7 +20,9 @@ class RollDice(commands.Cog):
         if num_dice * num_sides.bit_length() > 1984:
             return await context.send("I don't have all those dice")
 
-        raw_rolls = [random.randint(1, num_sides) for _ in range(num_dice)]
+        roll_func = _unlucky_roll if context.author.id in self.unlucky else _fair_roll
+
+        raw_rolls = [roll_func(num_sides) for _ in range(num_dice)]
         total = sum(raw_rolls)
 
         if len(raw_rolls) > 1:
@@ -30,3 +35,10 @@ class RollDice(commands.Cog):
             return await context.send("I don't have all those dice")
 
         return await context.send(message)
+
+
+def _unlucky_roll(num_sides: int):
+    return max(random.randint(1, num_sides) - random.randint(0, num_sides//4), 1)
+
+def _fair_roll(num_sides: int):
+    return random.randint(1, num_sides)
