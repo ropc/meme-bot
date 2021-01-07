@@ -8,3 +8,4 @@ from .beans import Beans
 from .meta import Meta
 from .wolframalpha import WolframAlpha
 from .tarot import TarotCard
+from .suggest import Suggest
