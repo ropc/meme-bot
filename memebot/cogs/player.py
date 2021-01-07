@@ -7,7 +7,7 @@ from discord.ext import commands
 from pydantic import BaseModel
 from typing import Optional, Callable, Dict
 from memebot.guildconfig import GuildConfig
-from memebot.player import Player, PlayerABC, PlayerDelegate, PlayerEvent, SearchEvent
+from memebot.player import Player, PlayerABC, PlayerDelegate, PlayerEvent, SearchEvent, PlaybackItem
 from memebot.error import MemeBotCheckError
 
 
@@ -26,7 +26,7 @@ class PlayerConfig(BaseModel):
 async def display_queue(context: commands.Context, config: PlayerConfig):
     if len(config.player.playback_queue) == 0:
         return await context.send('Nothing in queue. Add a song with !play', delete_after=30)
-    queue = '\n'.join(f'[{idx}] {item.title}' for idx,item in enumerate(config.player.playback_queue))
+    queue = '\n'.join(f'[{idx}] {item.title} [{item.duration}]' for idx,item in enumerate(config.player.playback_queue))
     return await context.send(f'Up next:\n{queue}', delete_after=60)
 
 
@@ -140,9 +140,9 @@ class PlayerCog(commands.Cog, PlayerDelegate, CogPlayerConfigChecker, metaclass=
         log.debug(f'received player event {event} from {player}')
         message = None
         if event.event_type == PlayerEvent.Type.ENQUEUED:
-            message = await config.text_channel.send(f'Added to queue: {event.item.title}')
+            message = await config.text_channel.send(f'Added to queue: {event.item.title} [{event.item.duration}]')
         elif event.event_type == PlayerEvent.Type.STARTED:
-            await config.text_channel.send(f'Now playing: {event.item.title}')
+            await config.text_channel.send(f'Now playing: {event.item.title} [{event.item.duration}]')
             await self.bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=event.item.title))
         elif event.event_type == PlayerEvent.Type.PLAYBACK_ERROR:
             await config.text_channel.send(f'error when trying to play {event.item.title} =(')

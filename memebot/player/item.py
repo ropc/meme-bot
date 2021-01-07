@@ -1,3 +1,4 @@
+import datetime
 from uuid import UUID
 from pydantic import BaseModel
 
@@ -8,3 +9,4 @@ class PlaybackItem(BaseModel):
     transaction_id: UUID
     filepath: str
     download_url: str
+    duration: datetime.timedelta

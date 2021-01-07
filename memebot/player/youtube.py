@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 import os
 import urllib
@@ -38,6 +39,7 @@ class YoutubePlaybackItemProvider(PlaybackItemProvider):
                 url=url,
                 filepath=filepath,
                 download_url=info['url'],
+                duration=datetime.timedelta(seconds=info['duration']),
                 transaction_id=transaction_id)
 
 
