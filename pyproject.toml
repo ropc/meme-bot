@@ -21,7 +21,7 @@ pygtrie = "^2.3"
 pydantic = "^1.1"
 youtube-dl = "^2020.11.12"
 lxml = "^4.5.0"
-matplotlib = "^3.2.1"
+matplotlib = "^3.3.4"
 ptvsd = "^4.3.2"
 tailer = "^0.4.1"
 
