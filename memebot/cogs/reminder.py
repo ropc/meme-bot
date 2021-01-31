@@ -45,6 +45,8 @@ class ReminderCog(commands.Cog):
         '''Set a reminder.
         Usage: "remind me (in|at|on) [time] (to|that) [message]" or
         "remind me (to|that) [message] (in|at|on) [time]"
+        **Assumes 24-hour time in EST**, but you can explicity say am/pm
+        or a different timezone
         '''
         async with context.typing():
             now = datetime.datetime.now(tz=dateutil.tz.gettz('US/Eastern'))
@@ -84,7 +86,7 @@ class ReminderCog(commands.Cog):
             self.reminders.append(reminder)
             self.reminders.sort(key=lambda r: r.time)  # TODO: use a sorted data structure
             self.save_reminders()
-            await context.reply(f"Reminder set")
+            await context.reply(f"Reminder set at {format_time(reminder.time)}")
 
     @commands.command(aliases=['reminders'])
     async def list_reminders(self, context: commands.Context):
@@ -183,6 +185,9 @@ class ReminderCog(commands.Cog):
             pickle.dump(self.reminders, f)
         log.debug(f'saved reminders: {self.reminders}')
 
+def format_time(time: datetime.datetime) -> str:
+    return time.astimezone(dateutil.tz.gettz('US/Eastern')).strftime('%H:%M:%S %b %d %Y %Z')
+
 def format_reminder(index: int, username: str, message: str, time: datetime.datetime) -> str:
-    formatted_time = time.astimezone(dateutil.tz.gettz('US/Eastern')).strftime('%H:%M:%S %b %d %Y %Z')
+    formatted_time = format_time(time)
     return f'[{index}] - {username}: {message} _{formatted_time}_'
