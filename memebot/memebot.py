@@ -48,6 +48,12 @@ class MemeBot(commands.Bot):
         self.add_cog(TarotCard())
         self.add_cog(Suggest(os.getenv('MEME_BOT_GITHUB_TOKEN', ''), os.getenv('MEME_BOT_SUGGESTION_GITHUB_PROJECT_COLUMN_ID', '')))
 
+    async def on_command(self, context: commands.Context):
+        log.debug(f'received command {context.command}')
+
+    async def on_command_completion(self, context: commands.Context):
+        log.debug(f'successfully completed command {context.command}')
+
     async def on_command_error(self, context: commands.Context, exception: commands.CommandError):
         log.error(f'command error for {context.command}', exc_info=exception)
         if isinstance(exception, MemeBotError) and len(exception.args) > 0 and isinstance(exception.args[0], str):
