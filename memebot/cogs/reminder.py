@@ -46,9 +46,8 @@ class ReminderCog(commands.Cog):
         Usage: "remind me (in|at|on) [time] (to|that) [message]" or
         "remind me (to|that) [message] (in|at|on) [time]"
         '''
-        # TODO: add persistance between shut downs
         async with context.typing():
-            now = datetime.datetime.now(tz=dateutil.tz.tzutc())
+            now = datetime.datetime.now(tz=dateutil.tz.gettz('US/Eastern'))
             match = self.regex_a.match(text) or self.regex_b.match(text)
             if not match:
                 return await context.send('wrong format for reminder')
