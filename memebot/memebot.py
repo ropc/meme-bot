@@ -6,7 +6,7 @@ from discord.ext.commands.view import StringView
 from pygtrie import CharTrie
 from typing import Dict, Iterable, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping, List
 from .guildconfig import get_guild_config_dict
-from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme, Meta, TarotCard, WolframAlpha, Suggest
+from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme, Meta, TarotCard, WolframAlpha, Suggest, Reminder
 from .cogs.meme import MemeGroup
 from .error import MemeBotError
 from .help import EmbedHelpCommand, add_single_command_field
@@ -47,6 +47,7 @@ class MemeBot(commands.Bot):
         self.add_cog(WolframAlpha(os.getenv('MEME_BOT_WOLFRAM_ALPHA_KEY', '')))
         self.add_cog(TarotCard())
         self.add_cog(Suggest(os.getenv('MEME_BOT_GITHUB_TOKEN', ''), os.getenv('MEME_BOT_SUGGESTION_GITHUB_PROJECT_COLUMN_ID', '')))
+        self.add_cog(Reminder(self, os.getenv('REMINDERS_SAVE_FILE_PATH', './reminders.pickle')))
 
     async def on_command(self, context: commands.Context):
         log.debug(f'received command {context.command}')
@@ -73,7 +74,7 @@ class MemeBot(commands.Bot):
         context = await super().get_context(message, cls=cls)
         new_command, alias, full_string = None, None, None
         # this is all pretty hacky tbh
-        if context.prefix and context.command is None and isinstance(self.all_commands, CharTrie):
+        if context.prefix and isinstance(self.all_commands, CharTrie):
             no_prefix_content = message.content[len(context.prefix):]
             alias, new_command = self.all_commands.longest_prefix(no_prefix_content)
             full_string = context.prefix + alias if alias else None
