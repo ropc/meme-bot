@@ -32,8 +32,6 @@ class ContextInput(AbstractInput):
         text = context.get(self.key)
         if not text:
             return None
-        if self.prefix:
-            text = self.prefix + text
-        if self.suffix:
-            text = text + self.suffix
-        return text
+        prefix = self.prefix or ''
+        suffix = self.suffix or ''
+        return prefix + text + suffix
