@@ -143,4 +143,16 @@ ALL_MEMES = [
                 position=Coordinate(x=900, y=900), fontsize=84, maxwidth=12),
         ]
     ),
+    Meme(
+        image_filename='fancy-winnie-the-pooh.png',
+        aliases=['fancy pooh', 'fancy winnie the pooh', 'pooh', 'fp'],
+        help_string='Usage: !meme fancy pooh <top> / <bottom>',
+        plugins=[
+            SplitText(plugin_input=UserInput()),
+            DrawText(plugin_input=ContextInput(key='text-1'), textstyle=TextStyle.BLACK,
+                position=Coordinate(x=649, y=165), fontsize=62, maxwidth=15),
+            DrawText(plugin_input=ContextInput(key='text-2'), textstyle=TextStyle.BLACK,
+                position=Coordinate(x=649, y=495), fontsize=62, maxwidth=15),
+        ]
+    ),
 ]
