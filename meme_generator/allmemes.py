@@ -131,4 +131,16 @@ ALL_MEMES = [
                 position=Coordinate(x=710, y=300), fontsize=62, maxwidth=11),
         ]
     ),
+    Meme(
+        image_filename='drake.jpg',
+        aliases=['drake'],
+        help_string='Usage: !meme drake <top> / <bottom>',
+        plugins=[
+            SplitText(plugin_input=UserInput()),
+            DrawText(plugin_input=ContextInput(key='text-1'), textstyle=TextStyle.BLACK,
+                position=Coordinate(x=900, y=300), fontsize=84, maxwidth=12),
+            DrawText(plugin_input=ContextInput(key='text-2'), textstyle=TextStyle.BLACK,
+                position=Coordinate(x=900, y=900), fontsize=84, maxwidth=12),
+        ]
+    ),
 ]
