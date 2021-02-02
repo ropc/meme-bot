@@ -119,7 +119,7 @@ ALL_MEMES = [
     ),
     Meme(
         image_filename='shaking-hands.jpg',
-        aliases=['shaking hands', 'sh'],
+        aliases=['shaking hands', 'handshake', 'sh', 'hs'],
         help_string='Usage: !meme shaking hands <left> / <hands> / <right>',
         plugins=[
             SplitText(plugin_input=UserInput()),
