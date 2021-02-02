@@ -155,4 +155,16 @@ ALL_MEMES = [
                 position=Coordinate(x=649, y=495), fontsize=62, maxwidth=15),
         ]
     ),
+    Meme(
+        image_filename='uno.jpg',
+        aliases=['uno'],
+        help_string='Usage: !meme uno <card> / <person>',
+        plugins=[
+            SplitText(plugin_input=UserInput()),
+            DrawText(plugin_input=ContextInput(key='text-1'),
+                position=Coordinate(x=150, y=185), fontsize=42, maxwidth=8),
+            DrawText(plugin_input=ContextInput(key='text-2'),
+                position=Coordinate(x=363, y=100), fontsize=42, maxwidth=9),
+        ]
+    ),
 ]
