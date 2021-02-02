@@ -195,4 +195,18 @@ ALL_MEMES = [
                 position=Coordinate(x=407, y=554), fontsize=54, maxwidth=15),
         ]
     ),
+    Meme(
+        image_filename='always-has-been.png',
+        aliases=['always has been', 'always'],
+        help_string='Usage: !meme always has been <astronaut asking> / <optional: earth>',
+        plugins=[
+            SplitText(plugin_input=UserInput()),
+            DrawText(plugin_input=ContextInput(key='text-1'),
+                position=Coordinate(x=490, y=188), fontsize=44, maxwidth=11),
+            DrawText(plugin_input=ContextInput(key='text-2'), required=False,
+                position=Coordinate(x=225, y=280), fontsize=44, maxwidth=10),
+            DrawText(plugin_input=RawInput(text='always has been'),
+                position=Coordinate(x=798, y=35), fontsize=44, maxwidth=15),
+        ]
+    ),
 ]
