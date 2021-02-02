@@ -167,4 +167,18 @@ ALL_MEMES = [
                 position=Coordinate(x=363, y=100), fontsize=42, maxwidth=9),
         ]
     ),
+    Meme(
+        image_filename='why-would-you-kill.jpg',
+        aliases=['why would you'],
+        help_string='Usage: !meme why would you <do this> / <dead guy> / <guy talking>',
+        plugins=[
+            SplitText(plugin_input=UserInput()),
+            DrawText(plugin_input=ContextInput(key='text-1', prefix='why would you ', suffix='?'),
+                position=AutoPosition.BOTTOM, fontsize=100, maxwidth=22),
+            DrawText(plugin_input=ContextInput(key='text-2'),
+                position=Coordinate(x=306, y=442), fontsize=100, maxwidth=9),
+            DrawText(plugin_input=ContextInput(key='text-3'),
+                position=Coordinate(x=898, y=301), fontsize=100, maxwidth=9),
+        ]
+    ),
 ]
