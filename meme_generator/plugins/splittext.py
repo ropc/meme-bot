@@ -1,13 +1,14 @@
+import re
 from typing import Dict
 from PIL import Image
 from .baseplugin import BasePlugin
 
 
 class SplitText(BasePlugin):
-    separator: str = ' /'  # mypy: ignore
+    regex = re.compile(r'(?:\s*/\s*|(https?://\S+))')
 
     async def run(self, image: Image, text: str, context: Dict):
-        # TODO: don't split URLs
-        for (i, item) in enumerate(text.split(self.separator), 1):
+        non_empty_args = filter(None, self.regex.split(text))
+        for (i, item) in enumerate(non_empty_args, 1):
             context[f'text-{i}'] = item.strip()
  
