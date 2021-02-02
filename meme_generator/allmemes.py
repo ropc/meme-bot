@@ -116,5 +116,19 @@ ALL_MEMES = [
             DrawText(plugin_input=ContextInput(key='text-3'), required=False,
                 position=AutoPosition.TOP, fontsize=300, maxwidth=12)
         ]
-    )
+    ),
+    Meme(
+        image_filename='shaking-hands.jpg',
+        aliases=['shaking hands', 'sh'],
+        help_string='Usage: !meme shaking hands <left> / <hands> / <right>',
+        plugins=[
+            SplitText(plugin_input=UserInput()),
+            DrawText(plugin_input=ContextInput(key='text-1'),
+                position=Coordinate(x=180, y=360), fontsize=62, maxwidth=10),
+            DrawText(plugin_input=ContextInput(key='text-2'),
+                position=Coordinate(x=349, y=100), fontsize=62, maxwidth=10),
+            DrawText(plugin_input=ContextInput(key='text-3'),
+                position=Coordinate(x=710, y=300), fontsize=62, maxwidth=11),
+        ]
+    ),
 ]
