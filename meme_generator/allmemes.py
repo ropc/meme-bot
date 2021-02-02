@@ -181,4 +181,18 @@ ALL_MEMES = [
                 position=Coordinate(x=898, y=301), fontsize=100, maxwidth=9),
         ]
     ),
+    Meme(
+        image_filename='exit.jpg',
+        aliases=['exit'],
+        help_string='Usage: !meme exit <sign ahead> / <sign exit> / <car>',
+        plugins=[
+            SplitText(plugin_input=UserInput()),
+            DrawText(plugin_input=ContextInput(key='text-1'),
+                position=Coordinate(x=245, y=179), fontsize=32, maxwidth=9),
+            DrawText(plugin_input=ContextInput(key='text-2'),
+                position=Coordinate(x=500, y=180), fontsize=34, maxwidth=10),
+            DrawText(plugin_input=ContextInput(key='text-3'),
+                position=Coordinate(x=407, y=554), fontsize=54, maxwidth=15),
+        ]
+    ),
 ]
