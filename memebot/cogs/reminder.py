@@ -27,8 +27,8 @@ class ReminderCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot, save_file_path: str):
         self.bot = bot
-        self.regex_a = re.compile(r'(?:in|at|on)\s+(?P<time>.+)\s+(?:to|that|about)\s+(?P<message>.+)')
-        self.regex_b = re.compile(r'(?:to|that|about)\s+(?P<message>.+)\s+(?:in|at|on)\s+(?P<time>.+)')
+        self.regex_a = re.compile(r'(?:in|at|on)\s+(?P<time>.+)\s+(?:to|that|about|what)\s+(?P<message>.+)')
+        self.regex_b = re.compile(r'(?:to|that|about|what)\s+(?P<message>.+)\s+(?:in|at|on)\s+(?P<time>.+)')
         self.reminders: List[Reminder] = []
         self.timer: Optional[threading.Timer] = None
         self.loop = asyncio.get_event_loop()
