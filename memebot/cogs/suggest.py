@@ -10,7 +10,7 @@ class Suggest(commands.Cog):
         self.project_column_id = project_column_id
 
     @commands.command(aliases=["segges"])
-    async def suggest(self, context: commands.Context, text: str):
+    async def suggest(self, context: commands.Context, *, text: str):
         '''Suggest a new feature. Existing suggestions can be seen
         at https://github.com/ropc/meme-bot/projects/1#column-12267170
         '''
