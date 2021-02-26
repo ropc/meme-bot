@@ -17,9 +17,11 @@ class Suggest(commands.Cog):
         headers = {
             'Authorization': f'Bearer {self.github_token}'
         }
+        # json.dumps() outputs a string with quotes around it. this removes the quotes
+        escaped_text = json.dumps(text)[1:-1]
         payload = {
             "query": f'''mutation {{
-                addProjectCard(input: {{projectColumnId: "{self.project_column_id}", note:"{text}\n\n_Suggested by {context.author.name}_"}}) {{
+                addProjectCard(input: {{projectColumnId: "{self.project_column_id}", note:"{escaped_text}\n\n_Suggested by {context.author.name}_"}}) {{
                     cardEdge {{
                         node {{
                             url
