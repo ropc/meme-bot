@@ -6,7 +6,7 @@ from discord.ext.commands.view import StringView
 from pygtrie import CharTrie
 from typing import Dict, Iterable, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping, List
 from .guildconfig import get_guild_config_dict
-from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme, Meta, TarotCard, WolframAlpha, Suggest, Reminder
+from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme, Meta, TarotCard, WolframAlpha, Suggest, Reminder, Hey
 from .cogs.meme import MemeGroup
 from .error import MemeBotError
 from .help import EmbedHelpCommand, add_single_command_field
@@ -48,6 +48,7 @@ class MemeBot(commands.Bot):
         self.add_cog(TarotCard())
         self.add_cog(Suggest(os.getenv('MEME_BOT_GITHUB_TOKEN', ''), os.getenv('MEME_BOT_SUGGESTION_GITHUB_PROJECT_COLUMN_ID', '')))
         self.add_cog(Reminder(self, os.getenv('REMINDERS_SAVE_FILE_PATH', './reminders.pickle')))
+        self.add_cog(Hey())
 
     async def on_command(self, context: commands.Context):
         log.debug(f'received command {context.command}')
