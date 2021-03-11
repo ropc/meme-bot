@@ -1,0 +1,25 @@
+# Basic set up for three package managers
+
+version: 2
+updates:
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "US/Eastern"
+    labels:
+      - "dependencies"
+      - "automerge"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      # Check for updates to GitHub Actions every weekday
+      interval: "daily"
+      time: "03:00"
+      timezone: "US/Eastern"
+    labels:
+      - "github-actions"
+      - "automerge"
