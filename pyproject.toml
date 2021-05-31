@@ -28,7 +28,7 @@ python-dateutil = "^2.8.1"
 dateparser = "^1.0.0"
 
 [tool.poetry.dev-dependencies]
-ipython = "^7.7"
+ipython = "^7.24"
 rope = "^0.18.0"
 mypy = "^0.780"
 requests = "^2.23.0"
