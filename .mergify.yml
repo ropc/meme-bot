@@ -1,7 +1,7 @@
 pull_request_rules:
   - name: Automatic merge dependecy updates
     conditions:
-      - author=dependabot
+      - label=automerge
     actions:
       merge:
         method: squash
