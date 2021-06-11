@@ -30,7 +30,7 @@ dateparser = "^1.0.0"
 [tool.poetry.dev-dependencies]
 ipython = "^7.24"
 rope = "^0.19.0"
-mypy = "^0.901"
+mypy = "^0.902"
 requests = "^2.23.0"
 pytest = "^6.2.4"
 pytest-asyncio = "^0.15.1"
