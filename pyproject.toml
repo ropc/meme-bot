@@ -29,7 +29,7 @@ dateparser = "^1.1.0"
 
 [tool.poetry.dev-dependencies]
 ipython = "^7.28"
-rope = "^0.20.1"
+rope = "^0.21.0"
 mypy = "^0.910"
 requests = "^2.26.0"
 pytest = "^6.2.5"
