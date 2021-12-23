@@ -1,7 +1,13 @@
+import random
 import discord
 from discord.ext import commands
+from .outofcontext import OutOfContext
 
 class Hey(commands.Cog):
+
+    def __init__(self, ooc_cog: OutOfContext):
+        super().__init__()
+        self.ooc_cog = ooc_cog
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
@@ -9,3 +15,6 @@ class Hey(commands.Cog):
             return
 
         await message.add_reaction('👋')
+        if random.random() < 0.5:
+            return
+        await self.ooc_cog.send_ooc_message(message.channel)

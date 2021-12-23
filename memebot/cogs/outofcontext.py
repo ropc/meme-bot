@@ -31,14 +31,17 @@ class OutOfContext(commands.Cog):
     @commands.command(aliases=['out of context', 'ooc'])
     async def out_of_context(self, context: commands.Context):
         '''Posts a random image from out of context channel'''
+        return await self.send_ooc_message(context)
+
+    async def send_ooc_message(self, messagable: discord.abc.Messageable):
         ooc_channel = self.bot.get_channel(self.channel_id)
         if not ooc_channel:
-            return await context.send('Could not find out of context channel')
+            return await messagable.send('Could not find out of context channel')
 
         if len(self.attachments) == 0:
-            return await context.send('No images to send')
+            return await messagable.send('No images to send')
 
-        async with context.typing():
+        async with messagable.typing():
             random_attachment = random.choice(self.attachments)
             attachment_file = await random_attachment.to_file()
-            await context.send(file=attachment_file)
+            await messagable.send(file=attachment_file)

@@ -36,8 +36,10 @@ class MemeBot(commands.Bot):
         config = get_guild_config_dict(os.getenv('MEME_BOT_GUILD_CONFIG', '{}'))
 
         # cogs setup
+        # TODO: this needs auto dependency management
+        ooc_cog = OutOfContext(self, int(os.getenv('MEME_BOT_OOC_CHANNEL_ID', 0)))
         self.add_cog(Quote())
-        self.add_cog(OutOfContext(self, int(os.getenv('MEME_BOT_OOC_CHANNEL_ID', 0))))
+        self.add_cog(ooc_cog)
         self.add_cog(ChatStats())
         self.add_cog(RollDice(int(x) for x in os.getenv('MEME_BOT_UNLUCKY_ROLL_IDS', '').split(',') if x))
         self.add_cog(Player(self, config))
@@ -48,7 +50,7 @@ class MemeBot(commands.Bot):
         self.add_cog(TarotCard())
         self.add_cog(Suggest(os.getenv('MEME_BOT_GITHUB_TOKEN', ''), os.getenv('MEME_BOT_SUGGESTION_GITHUB_PROJECT_COLUMN_ID', '')))
         self.add_cog(Reminder(self, os.getenv('REMINDERS_SAVE_FILE_PATH', './reminders.pickle')))
-        self.add_cog(Hey())
+        self.add_cog(Hey(ooc_cog=ooc_cog))
 
     async def on_command(self, context: commands.Context):
         log.debug(f'received command {context.command}')
