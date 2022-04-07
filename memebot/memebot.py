@@ -67,9 +67,13 @@ class MemeBot(commands.Bot):
                 description=f'Input: `{context.message.content}`')
             await context.send(embed=embed)
         elif context.command:
+            description = f'**Input:** `{context.message.content}`'
+            if isinstance(exception, commands.errors.UserInputError):
+                description += f'\n**Error:** `{exception}`'
             embed = discord.Embed(
                 title='Something went wrong :cry:',
-                description=f'Input: `{context.message.content}`')
+                description=description
+            )
             prefix = context.prefix + context.command.full_parent_name + ' ' if context.command.full_parent_name else context.prefix
             add_single_command_field(embed, context.command, prefix=prefix)
             await context.send(embed=embed)

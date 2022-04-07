@@ -4,6 +4,10 @@ services:
     meme-bot:
         build: .
         volumes:
-            - .:/code
+            - memebot:/code
         environment:
             REMINDERS_SAVE_FILE_PATH: /code/reminders.pickle
+            WHISPER_CONFIG_FILE_PATH: /code/whisper_config.json
+
+volumes:
+  memebot:
