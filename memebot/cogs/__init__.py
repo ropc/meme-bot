@@ -11,3 +11,4 @@ from .tarot import TarotCard
 from .suggest import Suggest
 from .reminder import ReminderCog as Reminder
 from .hey import Hey
+from .whisper import Whisper
