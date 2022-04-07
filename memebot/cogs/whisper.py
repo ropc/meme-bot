@@ -103,27 +103,33 @@ class Whisper(commands.Cog):
 
     # manager commands
 
-    @commands.command(aliases=['setup new channels'])
+    @commands.command(aliases=['setup whispers', 'setup whisper'])
     @commands.has_role('whisper-manager')
-    async def discover_personal_channels(self, context: commands.Context, category: discord.CategoryChannel,
-            role: discord.Role, whisper_channel: Optional[discord.TextChannel], whisper_count: Optional[int] = 2):
+    async def setup_server(self, context: commands.Context, category: discord.CategoryChannel,
+            role: discord.Role, whisper_channel: discord.TextChannel, whisper_count_input: int):
         '''Setup personal channels.
-        Usage: !setup new channels <channel category> <role> <channel> <optional: whisper count>
-        Example: !setup new channels 'personal channels' @Player #whisper-channel
+        Usage: !setup whisper <channel category> <role> <whisper channel> <whisper count>
+        Example: !setup whisper "personal channels" @Player #whisper-channel 2
         '''
+        whisper_count = whisper_count_input if whisper_count_input >= 0 else None
         with context.typing():
             guild_config: GuildConfig = self.get_or_create_guild_config(
+                force_create=True,
                 guild_id=context.guild.id,
-                whisper_channel_id=whisper_channel.id if whisper_channel else None,
+                whisper_channel_id=whisper_channel.id,
                 role_id=role.id
             )
-            assigned_channel_ids = set(c.personal_channel_id for c in guild_config.member_configs.values())
+            self.save_config()
+
+            await context.send(
+                'Setting up server with the following:\n'
+                + f'whisper channel: **#{whisper_channel.name}**\n'
+                + f'whisper role: **@{role.name}**\n'
+                + f'starting whisper count: **{whisper_count if whisper_count else "∞"}**'
+            )
+
             decision_messages = {}
             for channel in category.text_channels:
-                if channel.id in assigned_channel_ids:
-                    # no need to re-assign
-                    continue
-
                 # possible members are those with individual permission overwrites
                 # for the current channel
                 possible_members = []
@@ -197,8 +203,7 @@ class Whisper(commands.Cog):
         self.save_config()
         self.decision_messages.pop(reaction.message.id)
 
-        await reaction.message.edit(content=f'set personal channel for {selected_member.mention} to {options.channel.mention}. they have {options.whisper_count} whisper(s)')
-
+        await reaction.message.edit(content=f'set personal channel for {selected_member.mention} to {options.channel.mention}')
 
     @commands.command(aliases=['set player channel'])
     @commands.has_role('whisper-manager')
@@ -219,7 +224,7 @@ class Whisper(commands.Cog):
             whisper_count=whisper_count,
         )
         self.save_config()
-        await context.reply(f'set personal channel for {member.mention} to {channel.mention}. they have {whisper_count} whisper(s)')
+        await context.reply(f'set personal channel for {member.mention} to {channel.mention}')
 
     @commands.command(aliases=['set whispers', 'set whisper count', 'swc'])
     @commands.has_role('whisper-manager')
@@ -275,9 +280,9 @@ class Whisper(commands.Cog):
         with open(self.whisper_config_filepath, 'w+') as f:
             f.write(self.whisper_config.json())
 
-    def get_or_create_guild_config(self, *, guild_id: int, whisper_channel_id: Optional[int], role_id: int) -> GuildConfig:
+    def get_or_create_guild_config(self, *, guild_id: int, whisper_channel_id: Optional[int], role_id: int, force_create=False) -> GuildConfig:
         guild_config = self.whisper_config.guild_configs.get(guild_id)
-        if not guild_config:
+        if not guild_config or force_create:
             guild_config = GuildConfig(
                 guild_id=guild_id,
                 whisper_channel_id=whisper_channel_id,
