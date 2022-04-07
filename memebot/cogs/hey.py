@@ -14,4 +14,4 @@ class Hey(commands.Cog):
             return
 
         await message.add_reaction('👋')
-        await self.ooc_cog.send_ooc_message(message.channel)
+        # await self.ooc_cog.send_ooc_message(message.channel)
