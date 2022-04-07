@@ -106,24 +106,24 @@ class Whisper(commands.Cog):
     @commands.command(aliases=['setup whispers', 'setup whisper'])
     @commands.has_role('whisper-manager')
     async def setup_server(self, context: commands.Context, category: discord.CategoryChannel,
-            role: discord.Role, whisper_channel: discord.TextChannel, whisper_count_input: int):
-        '''Setup personal channels.
-        Usage: !setup whisper <channel category> <role> <whisper channel> <whisper count>
-        Example: !setup whisper "personal channels" @Player #whisper-channel 2
+            role: discord.Role, whisper_count_input: int, whisper_channel: Optional[discord.TextChannel]):
+        '''Setup for whispers
+        Usage: !setup whisper <channel category> <role> <whisper count> <optional: whisper channel>
+        Example: !setup whisper "personal channels" @Player 2 #whisper-channel
         '''
         whisper_count = whisper_count_input if whisper_count_input >= 0 else None
         with context.typing():
             guild_config: GuildConfig = self.get_or_create_guild_config(
                 force_create=True,
                 guild_id=context.guild.id,
-                whisper_channel_id=whisper_channel.id,
+                whisper_channel_id=whisper_channel.id if whisper_channel else None,
                 role_id=role.id
             )
             self.save_config()
 
             await context.send(
                 'Setting up server with the following:\n'
-                + f'whisper channel: **#{whisper_channel.name}**\n'
+                + (f'whisper channel: **#{whisper_channel.name}**\n' if whisper_channel else '')
                 + f'whisper role: **@{role.name}**\n'
                 + f'starting whisper count: **{whisper_count if whisper_count else "∞"}**'
             )
