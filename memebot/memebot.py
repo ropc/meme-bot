@@ -37,7 +37,7 @@ class MemeBot(commands.Bot):
 
         # cogs setup
         # TODO: this needs auto dependency management
-        ooc_cog = OutOfContext(self, int(os.getenv('MEME_BOT_OOC_CHANNEL_ID', 0)))
+        ooc_cog = OutOfContext(self, os.getenv('OOC_CONFIG_FILE_PATH'))
         self.add_cog(Quote())
         self.add_cog(ooc_cog)
         self.add_cog(ChatStats())

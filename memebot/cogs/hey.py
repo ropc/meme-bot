@@ -14,4 +14,10 @@ class Hey(commands.Cog):
             return
 
         await message.add_reaction('👋')
-        # await self.ooc_cog.send_ooc_message(message.channel)
+
+        attachment = self.ooc_cog.get_random_ooc_attachment(message.guild.id) if message.guild else None
+        if not attachment:
+            return
+
+        attachment_file = await attachment.to_file()
+        await message.channel.send(file=attachment_file)
