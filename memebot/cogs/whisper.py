@@ -35,6 +35,28 @@ class WhisperConfig(BaseModel):
         arbitrary_types_allowed = True
 
 
+def name_equals_ignore_case(name: str, member: discord.Member):
+    name = name.lower()
+    return (name == member.name.lower()
+        or (member.nick and name == member.nick.lower()))
+
+
+class CaseInsensitiveMemberConverter(commands.MemberConverter):
+    async def convert(self, ctx: commands.Context, argument):
+        '''note: this is only looking at cached members, so may not always work'''
+        try:
+            return await super().convert(ctx, argument)
+        except commands.MemberNotFound:
+            if not isinstance(argument, str):
+                raise
+            matching_members = [member for member in ctx.guild.members if name_equals_ignore_case(argument, member)]
+            if len(matching_members) == 0:
+                raise
+            if len(matching_members) > 1:  # too ambiguous
+                raise
+            return matching_members[0]
+
+
 @dataclass
 class PersonalChannelConfigOptions:
     message_id: int
@@ -55,12 +77,13 @@ class Whisper(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def whisper(self, context: commands.Context, receiver: discord.Member, *, message: str):
+    async def whisper(self, context: commands.Context, receiver: CaseInsensitiveMemberConverter, *, message: str):
         '''Send a whisper to another player.
         Name must be exact, put in quotes the name has a space.
         Examples: !whisper Jeff stop trolling
         !whisper "someone with a long name" lynch jeff
         '''
+        receiver: discord.Member = receiver
         guild_config = self.whisper_config.guild_configs.get(context.guild.id)
         if not guild_config:
             return
