@@ -4,7 +4,7 @@ import logging
 import os.path
 import discord
 from dataclasses import dataclass
-from typing import Optional, Dict, Union
+from typing import Optional, Dict, Callable, Awaitable
 from pydantic import BaseModel
 from discord.ext import commands
 
@@ -41,11 +41,19 @@ def name_equals_ignore_case(name: str, member: discord.Member):
         or (member.nick and name == member.nick.lower()))
 
 
-class CaseInsensitiveMemberConverter(commands.MemberConverter):
-    async def convert(self, ctx: commands.Context, argument):
+@dataclass
+class MemberMatch:
+    member: discord.Member
+    is_high_confindence: bool
+
+    @classmethod
+    async def convert(cls, ctx: commands.Context, argument):
         '''note: this is only looking at cached members, so may not always work'''
         try:
-            return await super().convert(ctx, argument)
+            return cls(
+                member=await commands.MemberConverter().convert(ctx, argument),
+                is_high_confindence=True,
+            )
         except commands.MemberNotFound:
             if not isinstance(argument, str):
                 raise
@@ -54,7 +62,10 @@ class CaseInsensitiveMemberConverter(commands.MemberConverter):
                 raise
             if len(matching_members) > 1:  # too ambiguous
                 raise
-            return matching_members[0]
+            return cls(
+                member=matching_members[0],
+                is_high_confindence=False,
+            )
 
 
 @dataclass
@@ -74,10 +85,11 @@ class Whisper(commands.Cog):
         self.whisper_config_filepath = whisper_config_filepath
         self.whisper_config = self.load_or_create_default_config(whisper_config_filepath)
         self.decision_messages: Dict[int, PersonalChannelConfigOptions] = {}
+        self.callback_messages: Dict[int, Callable[[discord.Reaction, discord.User], Awaitable[bool]]] = {}
 
     @commands.command()
     @commands.guild_only()
-    async def whisper(self, context: commands.Context, receiver: discord.Member, *, message: str):
+    async def whisper(self, context: commands.Context, member_match: MemberMatch, *, message: str):
         '''Send a whisper to another player.
         Name must be exact, put in quotes the name has a space.
         Examples: !whisper Jeff stop trolling
@@ -101,29 +113,54 @@ class Whisper(commands.Cog):
         if sender_config.whisper_count is not None and sender_config.whisper_count <= 0:
             return await context.reply('out of whispers')
 
-        receiver_config = guild_config.member_configs.get(receiver.id)
-        if not receiver_config:
-            return await context.reply(f'failed to send message. no config found for {receiver.mention}')
+        async def complete_whisper():
+            receiver_config = guild_config.member_configs.get(member_match.member.id)
+            if not receiver_config:
+                return await context.reply(f'failed to send message. no config found for {member_match.member.mention}')
 
-        receiver_channel = await get_channel(context, receiver_config.personal_channel_id)
-        if not receiver_channel:
-            return await context.reply(f'failed to send message. no personal channel found for {receiver.mention}')
+            receiver_channel = await get_channel(context, receiver_config.personal_channel_id)
+            if not receiver_channel:
+                return await context.reply(f'failed to send message. no personal channel found for {member_match.member.mention}')
 
-        await receiver_channel.send(f'**{context.author.display_name} whispered you:** {message}')
-        await context.message.add_reaction('📬')
+            await receiver_channel.send(f'**{context.author.display_name} whispered you:** {message}')
+            await context.message.add_reaction('📬')
 
-        if sender_config.whisper_count is not None:
-            sender_config.whisper_count -= 1
-            self.save_config()
-            await context.send(f'you have {sender_config.whisper_count} whisper(s) remaining')
+            if sender_config.whisper_count is not None:
+                sender_config.whisper_count -= 1
+                self.save_config()
+                await context.send(f'you have {sender_config.whisper_count} whisper(s) remaining')
 
-        if not guild_config.whisper_channel_id:
+            if not guild_config.whisper_channel_id:
+                return
+
+            whisper_list_channel = await get_channel(context, guild_config.whisper_channel_id)
+            if not whisper_list_channel:
+                return await context.send(f'unable to find whisper list channel id: {guild_config.whisper_channel_id}')
+            await whisper_list_channel.send(f'{sender.display_name} whispered {member_match.member.display_name}')
+
+        if not member_match.is_high_confindence:
+            message = await context.reply(f'did you mean {member_match.member.mention}? (select below)')
+            await message.add_reaction('👍')
+            await message.add_reaction('👎')
+
+            async def callback(reaction: discord.Reaction, user: discord.User):
+                '''assumes react is for relevant message
+                return value indicates whether or not this callback entry can be removed from self.callback_messages
+                '''
+                if user.id != context.author.id or reaction.emoji not in ('👍', '👎'):
+                    return False
+
+                if reaction.emoji == '👎':
+                    await message.edit(content='please try again, name should be an EXACT match')
+                    return True
+
+                await complete_whisper()
+                return True
+
+            self.callback_messages[message.id] = callback
             return
 
-        whisper_list_channel = await get_channel(context, guild_config.whisper_channel_id)
-        if not whisper_list_channel:
-            return await context.send(f'unable to find whisper list channel id: {guild_config.whisper_channel_id}')
-        await whisper_list_channel.send(f'{sender.display_name} whispered {receiver.display_name}')
+        await complete_whisper()
 
     # manager commands
 
@@ -205,6 +242,15 @@ class Whisper(commands.Cog):
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
         if user.bot:
             return
+
+        callback = self.callback_messages.get(reaction.message.id)
+        if callback:
+            can_delete = await callback(reaction, user)
+
+            if can_delete:
+                self.callback_messages.pop(reaction.message.id)
+
+        # TODO: refactor below to follow new pattern
 
         options = self.decision_messages.get(reaction.message.id)
         if not options or options.initiator.id != user.id:
