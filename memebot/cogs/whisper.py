@@ -1,4 +1,5 @@
 import asyncio
+from distutils.command.config import config
 import logging
 import os.path
 import discord
@@ -36,6 +37,7 @@ class WhisperConfig(BaseModel):
 
 @dataclass
 class PersonalChannelConfigOptions:
+    message_id: int
     member_options: Dict[str, discord.Member]  # emoji to discord.Member
     channel: discord.TextChannel
     whisper_count: Optional[int]
@@ -112,15 +114,58 @@ class Whisper(commands.Cog):
         Example: !setup whisper "personal channels" @Player 2 #whisper-channel
         '''
         whisper_count = whisper_count_input if whisper_count_input >= 0 else None
-        with context.typing():
-            guild_config: GuildConfig = self.get_or_create_guild_config(
-                force_create=True,
-                guild_id=context.guild.id,
-                whisper_channel_id=whisper_channel.id if whisper_channel else None,
-                role_id=role.id
-            )
-            self.save_config()
 
+        guild_config: GuildConfig = self.get_or_create_guild_config(
+            force_create=True,
+            guild_id=context.guild.id,
+            whisper_channel_id=whisper_channel.id if whisper_channel else None,
+            role_id=role.id
+        )
+        self.save_config()
+
+        async def setup_personal_channel(channel: discord.TextChannel) -> Optional[PersonalChannelConfigOptions]:
+            # possible members are those with individual permission overwrites
+            # for the current channel
+            possible_members = [m for m in channel.members if not m.bot and not channel.overwrites_for(m).is_empty()]
+
+            if len(possible_members) == 0:
+                possible_members = [member for member in channel.members if not member.bot]
+
+            if len(possible_members) == 0:
+                await context.send(f'unable to find possible members for {channel.mention}')
+                return
+
+            # easy case, no decision/input needed
+            if len(possible_members) == 1:
+                member = possible_members[0]
+                guild_config.member_configs[member.id] = MemberConfig(
+                    member_id=member.id,
+                    personal_channel_id=channel.id,
+                    whisper_count=whisper_count,
+                )
+                self.save_config()
+                await context.send(f'set personal channel for {member.mention} to {channel.mention}')
+                return
+
+            options = list(zip(EMOJI_NUMBERS, possible_members))
+            options_text = '\n'.join(f'{emoji} - {member.mention}' for (emoji, member) in options)
+            message = await context.send(f'Please select the corresponding user for {channel.mention}:\n{options_text}')
+
+            # doing it this way so that they show up in order
+            for (emoji, _) in options:
+                await message.add_reaction(emoji)
+
+            return PersonalChannelConfigOptions(
+                message_id=message.id,
+                member_options={option[0]: option[1] for option in options},
+                channel=channel,
+                whisper_count=whisper_count,
+                initiator=context.author,
+                role_id=role.id,
+                guild_id=context.guild.id,
+            )
+
+        with context.typing():
             await context.send(
                 'Setting up server with the following:\n'
                 + (f'whisper channel: **#{whisper_channel.name}**\n' if whisper_channel else '')
@@ -128,50 +173,10 @@ class Whisper(commands.Cog):
                 + f'starting whisper count: **{whisper_count if whisper_count else "∞"}**'
             )
 
-            decision_messages = {}
-            for channel in category.text_channels:
-                # possible members are those with individual permission overwrites
-                # for the current channel
-                possible_members = [m for m in channel.members if not m.bot and not channel.overwrites_for(m).is_empty()]
+            personal_channel_configs = await asyncio.gather(*[setup_personal_channel(channel) for channel in category.text_channels])
+            self.decision_messages = {config.message_id: config for config in personal_channel_configs if config}
 
-                if len(possible_members) == 0:
-                    possible_members = [member for member in channel.members if not member.bot]
-
-                if len(possible_members) == 0:
-                    await context.send(f'unable to find possible members for {channel.mention}')
-                    continue
-
-                # easy case, no decision/input needed
-                if len(possible_members) == 1:
-                    member = possible_members[0]
-                    guild_config.member_configs[member.id] = MemberConfig(
-                        member_id=member.id,
-                        personal_channel_id=channel.id,
-                        whisper_count=whisper_count,
-                    )
-                    self.save_config()
-                    await context.send(f'set personal channel for {member.mention} to {channel.mention}')
-                    continue
-
-                options = list(zip(EMOJI_NUMBERS, possible_members))
-                options_text = '\n'.join(f'{emoji} - {member.mention}' for (emoji, member) in options)
-                message = await context.send(f'Please select the corresponding user for {channel.mention}:\n{options_text}')
-
-                # doing it this way so that they show up in order
-                for (emoji, _) in options:
-                    await message.add_reaction(emoji)
-
-                decision_messages[message.id] = PersonalChannelConfigOptions(
-                    member_options={option[0]: option[1] for option in options},
-                    channel=channel,
-                    whisper_count=whisper_count,
-                    initiator=context.author,
-                    role_id=role.id,
-                    guild_id=context.guild.id,
-                )
-
-            self.decision_messages = decision_messages
-            if len(decision_messages) == 0:
+            if len(self.decision_messages) == 0:
                 await context.send('done!')
 
     @commands.Cog.listener()
