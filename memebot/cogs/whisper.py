@@ -57,14 +57,15 @@ class MemberMatch:
         except commands.MemberNotFound:
             if not isinstance(argument, str):
                 raise
-            matching_members = [member for member in ctx.guild.members if name_equals_ignore_case(argument, member)]
+            members = list(ctx.guild.members)
+            matching_members = [member for member in members if name_equals_ignore_case(argument, member)]
             if len(matching_members) == 0:
                 raise
             if len(matching_members) > 1:  # too ambiguous
-                raise
+                raise                      # maybe another interaction is possible?
             return cls(
                 member=matching_members[0],
-                is_high_confindence=False,
+                is_high_confindence=ctx.guild.member_count == len(members),
             )
 
 
