@@ -77,13 +77,12 @@ class Whisper(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def whisper(self, context: commands.Context, receiver: CaseInsensitiveMemberConverter, *, message: str):
+    async def whisper(self, context: commands.Context, receiver: discord.Member, *, message: str):
         '''Send a whisper to another player.
         Name must be exact, put in quotes the name has a space.
         Examples: !whisper Jeff stop trolling
         !whisper "someone with a long name" lynch jeff
         '''
-        receiver: discord.Member = receiver
         guild_config = self.whisper_config.guild_configs.get(context.guild.id)
         if not guild_config:
             return
