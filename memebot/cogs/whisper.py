@@ -132,14 +132,7 @@ class Whisper(commands.Cog):
             for channel in category.text_channels:
                 # possible members are those with individual permission overwrites
                 # for the current channel
-                possible_members = []
-                for member in channel.members:
-                    if member.bot:
-                        continue
-                    permissions_overwrite = channel.overwrites_for(member)
-                    if permissions_overwrite.is_empty():
-                        continue
-                    possible_members.append(member)
+                possible_members = [m for m in channel.members if not m.bot and not channel.overwrites_for(m).is_empty()]
 
                 if len(possible_members) == 0:
                     possible_members = [member for member in channel.members if not member.bot]
@@ -178,6 +171,8 @@ class Whisper(commands.Cog):
                 )
 
             self.decision_messages = decision_messages
+            if len(decision_messages) == 0:
+                await context.send('done!')
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
@@ -228,40 +223,48 @@ class Whisper(commands.Cog):
 
     @commands.command(aliases=['set whispers', 'set whisper count', 'swc'])
     @commands.has_role('whisper-manager')
-    async def set_whisper_count(self, context: commands.Context, count: int, member: Optional[discord.Member]):
+    async def set_whisper_count(self, context: commands.Context, member: Optional[discord.Member], count: int):
         '''Set whisper count.
-        Usage !set whispers <count> <optional: single user>
+        Usage !set whispers <optional: single user> <count>
         Example: !set whispers 10
         For infinite whispers: !set whispers -1
         '''
         count_str = str(count) if count >= 0 else '∞'
         guild_config = self.whisper_config.guild_configs.get(context.guild.id)
         if not guild_config:
-            await context.reply('missing guild config')
-            return
+            return await context.reply('missing guild config')
 
-        async def set_and_notify_whisper_count(member_config: MemberConfig):
+        member_config = guild_config.member_configs.get(member.id) if member else None
+        if member and member_config is None:
+            return await context.reply(f'could not find config for member {member.mention}')
+
+        async def set_and_notify_whisper_count(member_config: MemberConfig) -> Optional[discord.Member]:
+            '''returns discord.Member if successful'''
             member = await get_member(context, member_config.member_id)
             if not member:
-                return await context.send(f'cound not find user with id {member_config.member_id}')
+                await context.send(f'cound not find user with id {member_config.member_id}')
+                return None
 
             if guild_config.role_id not in (role.id for role in member.roles):
                 member_config.whisper_count = 0
-                return
+                return None
 
             member_config.whisper_count = count if count >= 0 else None
 
             personal_channel = await get_channel(context, member_config.personal_channel_id)
             if not personal_channel:    
-                return await context.send(f'could not find personal channel for {member.mention if member else member_config.member_id}')
+                await context.send(f'could not find personal channel for {member.mention if member else member_config.member_id}')
+                return member
 
-            return await personal_channel.send(f'you now have {count_str} whisper(s)')
+            await personal_channel.send(f'you now have {count_str} whisper(s)')
+            return member
 
         with context.typing():
-            members = guild_config.member_configs.values() if not member else [member]
-            await asyncio.gather(*[set_and_notify_whisper_count(config) for config in members])
+            member_configs = [member_config] if member_config else guild_config.member_configs.values()
+            members = await asyncio.gather(*[set_and_notify_whisper_count(config) for config in member_configs])
             self.save_config()
-            await context.reply(f"reset everyone's whisper count to {count_str}")
+            member_list_str = '\n'.join(member.display_name for member in members if member is not None)
+            await context.reply(f"reset whisper count to {count_str} for:\n{member_list_str}")
 
     def load_or_create_default_config(self, whisper_config_filepath):
         if not os.path.isfile(whisper_config_filepath):
