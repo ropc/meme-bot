@@ -11,16 +11,18 @@ class ChatStats(commands.Cog):
 
     @commands.command(aliases=['chatstats', 'chat stats'])
     async def chat_stats(self, context: commands.Context, days: Optional[int]):
-        '''Display stats for this context. Optionally given # days back. Will look only look at most 10k messages
+        '''Display stats for this context. Optionally given # days back. Will look only look at up to 1k messages
+        if no days argument given. Will look at up to 10k messages if days argument is given.
         Example: !chatstats 10 -> chat stats for the last 10 days
         '''
 
         async with context.typing():  # at least give some level of feedback
             counts: Dict[str, int] = {}
 
-            days_back = datetime.datetime.now() - datetime.timedelta(days=days) if days else None
+            since_date = datetime.datetime.utcnow() - datetime.timedelta(days=days) if days else None
+            limit = 10_000 if days else 1_000  # more accurate if days param is given
 
-            async for message in context.history(limit=10_000, after=days_back, oldest_first=False).filter(lambda m: not m.author.bot):  #type: discord.Message
+            async for message in context.history(limit=limit, after=since_date, oldest_first=False).filter(lambda m: not m.author.bot):  #type: discord.Message
                 counts[message.author.display_name] = counts.get(message.author.display_name, 0) + 1
 
             with plt.xkcd():
@@ -30,9 +32,12 @@ class ChatStats(commands.Cog):
                 values = [counts[n] for n in names]
 
                 axs.bar(names, values)
-                title = f'Number of messages in #{context.channel.name}'
-                if days_back:
-                    axs.set_title(title + f'\nsince {days_back:%Y-%m-%d}')
+                # DM channels don't have a name attribute
+                channel_name = f'#{context.channel.name}' if hasattr(context.channel, 'name') else 'this channel'
+                title = f'Number of messages in {channel_name}'
+                if since_date:
+                    # context.history() expects timezone-naive datetime, but want to show timezone here
+                    axs.set_title(title + f'\nsince {since_date.replace(tzinfo=datetime.timezone.utc):%Y-%m-%d %H:%M:%S %Z}')
                 else:
                     axs.set_title(title)
 
