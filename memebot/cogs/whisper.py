@@ -295,6 +295,19 @@ class Whisper(commands.Cog):
         self.save_config()
         await context.reply(f'set personal channel for {member.mention} to {channel.mention}')
 
+    @commands.command(aliases=['set whisper channel'])
+    @commands.has_role('whisper-manager')
+    @commands.guild_only()
+    async def set_whisper_channel(self, context: commands.Context, channel: discord.TextChannel):
+        guild_config = self.whisper_config.guild_configs.get(context.guild.id)
+        if not guild_config:
+            return await context.reply('missing guild config. please setup with !setup server')
+
+        guild_config.whisper_channel_id = channel.id
+        self.save_config()
+
+        await context.send(f'set whisper channel to {channel.mention}')
+
     @commands.command(aliases=['set whispers', 'set whisper count', 'swc'])
     @commands.has_role('whisper-manager')
     async def set_whisper_count(self, context: commands.Context, member: Optional[discord.Member], count: int):
