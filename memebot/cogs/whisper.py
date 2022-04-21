@@ -4,7 +4,7 @@ import logging
 import os.path
 import discord
 from dataclasses import dataclass
-from typing import Optional, Dict, Callable, Awaitable
+from typing import Optional, Dict, Callable, Awaitable, List
 from pydantic import BaseModel
 from discord.ext import commands
 
@@ -13,6 +13,8 @@ log = logging.getLogger('memebot')
 
 
 EMOJI_NUMBERS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
+
+ReactionCallback = Callable[[discord.Reaction, discord.User], Awaitable[bool]]
 
 
 class MemberConfig(BaseModel):
@@ -69,24 +71,12 @@ class MemberMatch:
             )
 
 
-@dataclass
-class PersonalChannelConfigOptions:
-    message_id: int
-    member_options: Dict[str, discord.Member]  # emoji to discord.Member
-    channel: discord.TextChannel
-    whisper_count: Optional[int]
-    initiator: discord.Member
-    guild_id: int
-    role_id: int
-
-
 class Whisper(commands.Cog):
     def __init__(self, whisper_config_filepath: str):
         super().__init__()
         self.whisper_config_filepath = whisper_config_filepath
         self.whisper_config = self.load_or_create_default_config(whisper_config_filepath)
-        self.decision_messages: Dict[int, PersonalChannelConfigOptions] = {}
-        self.callback_messages: Dict[int, Callable[[discord.Reaction, discord.User], Awaitable[bool]]] = {}
+        self.callback_messages: Dict[int, ReactionCallback] = {}
 
     @commands.command()
     @commands.guild_only()
@@ -183,10 +173,20 @@ class Whisper(commands.Cog):
         )
         self.save_config()
 
-        async def setup_personal_channel(channel: discord.TextChannel) -> Optional[PersonalChannelConfigOptions]:
+        async def setup_personal_channel(channel: discord.TextChannel) -> Optional[ReactionCallback]:
+            '''return true if done and no callback needed'''
+
+            def set_member_personal_channel(member: discord.Member):
+                guild_config.member_configs[member.id] = MemberConfig(
+                    member_id=member.id,
+                    personal_channel_id=channel.id,
+                    whisper_count=whisper_count,
+                )
+                self.save_config()
+
             # possible members are those with individual permission overwrites
             # for the current channel
-            possible_members = [m for m in channel.members if not m.bot and not channel.overwrites_for(m).is_empty()]
+            possible_members: List[discord.Member] = [m for m in channel.members if not m.bot and not channel.overwrites_for(m).is_empty()]
 
             if len(possible_members) == 0:
                 possible_members = [member for member in channel.members if not member.bot]
@@ -195,35 +195,33 @@ class Whisper(commands.Cog):
                 await context.send(f'unable to find possible members for {channel.mention}')
                 return
 
-            # easy case, no decision/input needed
-            if len(possible_members) == 1:
-                member = possible_members[0]
-                guild_config.member_configs[member.id] = MemberConfig(
-                    member_id=member.id,
-                    personal_channel_id=channel.id,
-                    whisper_count=whisper_count,
-                )
-                self.save_config()
-                await context.send(f'set personal channel for {member.mention} to {channel.mention}')
-                return
+            if len(possible_members) > 1:  # annoying/over-engineered case
+                options = list(zip(EMOJI_NUMBERS, possible_members))
+                options_by_emoji = {x[0]: x[1] for x in options}
+                options_text = '\n'.join(f'{emoji} - {member.mention}' for (emoji, member) in options)
+                message: discord.Message = await context.send(f'Please select the corresponding user for {channel.mention}:\n{options_text}')
 
-            options = list(zip(EMOJI_NUMBERS, possible_members))
-            options_text = '\n'.join(f'{emoji} - {member.mention}' for (emoji, member) in options)
-            message = await context.send(f'Please select the corresponding user for {channel.mention}:\n{options_text}')
+                # doing it this way so that they show up in order
+                for (emoji, _) in options:
+                    await message.add_reaction(emoji)
 
-            # doing it this way so that they show up in order
-            for (emoji, _) in options:
-                await message.add_reaction(emoji)
+                async def callback(reaction: discord.Reaction, user: discord.User):
+                    member = options_by_emoji.get(reaction.emoji)
+                    if user.id != context.author.id or not member:
+                        return False
 
-            return PersonalChannelConfigOptions(
-                message_id=message.id,
-                member_options={option[0]: option[1] for option in options},
-                channel=channel,
-                whisper_count=whisper_count,
-                initiator=context.author,
-                role_id=role.id,
-                guild_id=context.guild.id,
-            )
+                    set_member_personal_channel(member)
+                    await message.edit(content=f'set personal channel for {member.mention} to {channel.mention}')
+                    return True
+
+                self.callback_messages[message.id] = callback
+                return callback
+
+            # only one member in possible_members
+            # easy case/most likely case, no decision/input needed
+            member = possible_members[0]
+            set_member_personal_channel(member)
+            await context.send(f'set personal channel for {member.mention} to {channel.mention}')
 
         with context.typing():
             await context.send(
@@ -233,10 +231,9 @@ class Whisper(commands.Cog):
                 + f'starting whisper count: **{whisper_count if whisper_count else "∞"}**'
             )
 
-            personal_channel_configs = await asyncio.gather(*[setup_personal_channel(channel) for channel in category.text_channels])
-            self.decision_messages = {config.message_id: config for config in personal_channel_configs if config}
+            callbacks = await asyncio.gather(*[setup_personal_channel(channel) for channel in category.text_channels])
 
-            if len(self.decision_messages) == 0:
+            if not any(callbacks):
                 await context.send('done!')
 
     @commands.Cog.listener()
@@ -245,34 +242,12 @@ class Whisper(commands.Cog):
             return
 
         callback = self.callback_messages.get(reaction.message.id)
-        if callback:
-            can_delete = await callback(reaction, user)
-
-            if can_delete:
-                self.callback_messages.pop(reaction.message.id)
-
-        # TODO: refactor below to follow new pattern
-
-        options = self.decision_messages.get(reaction.message.id)
-        if not options or options.initiator.id != user.id:
-            # options is missing or someone else reacted
+        if not callback:
             return
 
-        selected_member = options.member_options.get(reaction.emoji)
-        if not selected_member:
-            # added some other emoji that wasn't an option
-            return
-
-        guild_config = self.whisper_config.guild_configs.get(reaction.message.guild.id)
-        guild_config.member_configs[selected_member.id] = MemberConfig(
-            member_id=selected_member.id,
-            personal_channel_id=options.channel.id,
-            whisper_count=options.whisper_count,
-        )
-        self.save_config()
-        self.decision_messages.pop(reaction.message.id)
-
-        await reaction.message.edit(content=f'set personal channel for {selected_member.mention} to {options.channel.mention}')
+        can_delete = await callback(reaction, user)
+        if can_delete:
+            self.callback_messages.pop(reaction.message.id)
 
     @commands.command(aliases=['set player channel'])
     @commands.has_role('whisper-manager')
