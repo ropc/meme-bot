@@ -30,9 +30,11 @@ class OutOfContext(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if (message.author.bot
-                or not message.guild
-                or message.guild.id not in self.config.guild_ooc_channel_id.keys()):
+        if message.author.bot or not message.guild:
+            return
+
+        guild_ooc_channel_id = self.config.guild_ooc_channel_id.get(message.guild.id)
+        if not guild_ooc_channel_id or message.channel.id != guild_ooc_channel_id:
             return
 
         if message.guild.id not in self.guild_attachments.keys():
