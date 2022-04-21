@@ -5,7 +5,7 @@ import random
 import discord
 from pydantic import BaseModel
 from discord.ext import commands
-from typing import MutableSet, Dict, Optional
+from typing import List, Dict, Optional
 
 
 log = logging.getLogger('memebot')
@@ -22,7 +22,7 @@ class OutOfContext(commands.Cog):
         self.bot = bot
         self.config_filepath = config_filepath
         self.config = load_config(config_filepath)
-        self.guild_attachments: Dict[int, MutableSet[discord.Attachment]] = {}
+        self.guild_attachments: Dict[int, List[discord.Attachment]] = {}
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -42,7 +42,7 @@ class OutOfContext(commands.Cog):
                 + 'maybe received message before completed loading old messages?')
             return
 
-        self.guild_attachments[message.guild.id].update(message.attachments)
+        self.guild_attachments[message.guild.id].extend(message.attachments)
 
     @commands.command(aliases=['out of context', 'ooc'])
     @commands.guild_only()
@@ -77,13 +77,13 @@ class OutOfContext(commands.Cog):
         await message.edit(content=f'set ooc channel as {channel.mention}. loaded {len(attachments)} attachments')
 
     async def load_attachments(self, guild_id: int, channel_id: int):
-        channel = self.bot.get_channel(channel_id)
+        channel: Optional[discord.TextChannel] = self.bot.get_channel(channel_id)
         if not channel:
             return
 
-        attachments = set()
+        attachments = []
         async for message in channel.history(limit=10_000):
-            attachments.update(message.attachments)
+            attachments.extend(message.attachments)
 
         self.guild_attachments[guild_id] = attachments
         return attachments
@@ -93,7 +93,7 @@ class OutOfContext(commands.Cog):
         if not attachments or len(attachments) == 0:
             return None
 
-        return random.choice(list(attachments))
+        return random.choice(attachments)
 
 
 def load_config(filepath: str):
