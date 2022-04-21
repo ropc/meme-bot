@@ -1,5 +1,4 @@
 import asyncio
-from distutils.command.config import config
 import logging
 import os.path
 import discord
