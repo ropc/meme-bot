@@ -149,9 +149,9 @@ regex = "<2019.02.19 || >2019.02.19,<2021.8.27 || >2021.8.27,<2022.3.15"
 tzlocal = "*"
 
 [package.extras]
-calendars = ["convertdate", "hijri-converter", "convertdate"]
-fasttext = ["fasttext"]
 langdetect = ["langdetect"]
+fasttext = ["fasttext"]
+calendars = ["convertdate", "hijri-converter", "convertdate"]
 
 [[package]]
 name = "decorator"
@@ -394,7 +394,7 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [package.extras]
-testing = ["docopt", "pytest (>=3.0.7)"]
+testing = ["pytest (>=3.0.7)", "docopt"]
 
 [[package]]
 name = "pexpect"
@@ -606,10 +606,10 @@ packaging = ">=21.3"
 tomli = {version = ">=2.0", markers = "python_version < \"3.11\""}
 
 [package.extras]
-doc = ["tabulate (>=0.8.9)", "sphinx (>=4.5.0)"]
-gen_docs = ["sphinx (>=4.5.0)", "sphinx-autodoc-typehints (>=1.18.1)", "sphinx-rtd-theme (>=1.0.0)", "pytoolconfig"]
-global = ["appdirs (>=1.4.4)"]
 validation = ["pydantic (>=1.7.4)"]
+global = ["appdirs (>=1.4.4)"]
+gen_docs = ["pytoolconfig", "sphinx-rtd-theme (>=1.0.0)", "sphinx-autodoc-typehints (>=1.18.1)", "sphinx (>=4.5.0)"]
+doc = ["sphinx (>=4.5.0)", "tabulate (>=0.8.9)"]
 
 [[package]]
 name = "pytz"
@@ -647,7 +647,7 @@ use_chardet_on_py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "rope"
-version = "1.2.0"
+version = "1.3.0"
 description = "a python refactoring library..."
 category = "dev"
 optional = false
@@ -657,8 +657,8 @@ python-versions = ">=3.7"
 pytoolconfig = ">=1.1.2"
 
 [package.extras]
-dev = ["pytest (>=7.0.1)", "pytest-timeout (>=2.1.0)", "build (>=0.7.0)"]
-doc = ["pytoolconfig", "sphinx (>=4.5.0)", "sphinx-autodoc-typehints (>=1.18.1)", "sphinx-rtd-theme (>=1.0.0)"]
+doc = ["sphinx-rtd-theme (>=1.0.0)", "sphinx-autodoc-typehints (>=1.18.1)", "sphinx (>=4.5.0)", "pytoolconfig"]
+dev = ["build (>=0.7.0)", "pytest-timeout (>=2.1.0)", "pytest (>=7.0.1)"]
 
 [[package]]
 name = "setuptools-scm"
@@ -697,7 +697,7 @@ executing = "*"
 pure-eval = "*"
 
 [package.extras]
-tests = ["pytest", "typeguard", "pygments", "littleutils"]
+tests = ["littleutils", "pygments", "typeguard", "pytest"]
 
 [[package]]
 name = "tailer"
@@ -792,7 +792,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "33c607a54735f26a3f89bfffbbcc424a0ee0381655840c185d0c6bee45fc8e9e"
+content-hash = "e6d7375ac46b8800fb89cbb6c9e2840873de0e29df77635a03b189fb33ee7a15"
 
 [metadata.files]
 aiohttp = [
@@ -1464,8 +1464,8 @@ requests = [
     {file = "requests-2.28.1.tar.gz", hash = "sha256:7c5599b102feddaa661c826c56ab4fee28bfd17f5abca1ebbe3e7f19d7c97983"},
 ]
 rope = [
-    {file = "rope-1.2.0-py3-none-any.whl", hash = "sha256:14e2e9b74ff345d038988fd62b7ef4226351e4a1181123596abb3a147fea9019"},
-    {file = "rope-1.2.0.tar.gz", hash = "sha256:f762542c9cfe52124aa55d33822a269fc4b0da70fe3170c6086de2733ed52f22"},
+    {file = "rope-1.3.0-py3-none-any.whl", hash = "sha256:f0c82bd7167c2926339c6f0d9ecf7c93d6866cbe380c78639fa1bc4ac037c097"},
+    {file = "rope-1.3.0.tar.gz", hash = "sha256:4e8ede637d8f43eb83847ef9ea7edbf4ceb9d641deea592ed38a8875cde64265"},
 ]
 setuptools-scm = [
     {file = "setuptools_scm-6.3.2-py3-none-any.whl", hash = "sha256:4c64444b1d49c4063ae60bfe1680f611c8b13833d556fd1d6050c0023162a119"},
