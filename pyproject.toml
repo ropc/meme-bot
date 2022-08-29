@@ -15,7 +15,7 @@ meme = "meme_generator.run:run_meme"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-"discord.py" = {extras = ["voice"], version = "^2.0.0"}
+"discord.py" = {extras = ["voice"], version = "^2.0.1"}
 pillow = "^9.2"
 pygtrie = "^2.5"
 pydantic = "^1.9"
