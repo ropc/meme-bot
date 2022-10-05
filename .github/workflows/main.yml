@@ -19,7 +19,7 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2.3.4
+    - uses: actions/checkout@v3.1.0
 
     # this decrypts the ssh key and stores it in $HOME/secrets/githubaction-key.pem
     # maybe we should add a step to delete after deploying?
