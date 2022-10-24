@@ -607,7 +607,7 @@ six = ">=1.5"
 
 [[package]]
 name = "pytoolconfig"
-version = "1.2.1"
+version = "1.2.2"
 description = "Python tool configuration"
 category = "dev"
 optional = false
@@ -659,14 +659,14 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "rope"
-version = "1.3.0"
+version = "1.4.0"
 description = "a python refactoring library..."
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
-pytoolconfig = ">=1.1.2"
+pytoolconfig = ">=1.2.2"
 
 [package.extras]
 dev = ["build (>=0.7.0)", "pytest (>=7.0.1)", "pytest-timeout (>=2.1.0)"]
@@ -820,7 +820,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "fe8b6437de225d7b2d4bbe04f5e69d06a0c1af93f8713ce2e066601e94f595d2"
+content-hash = "07dd438f425ac5367ac9c6eeaed8662ed4e5cc8fafb1cf62512bb73b0e4c0849"
 
 [metadata.files]
 aiohttp = [
@@ -1513,8 +1513,8 @@ python-dateutil = [
     {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},
 ]
 pytoolconfig = [
-    {file = "pytoolconfig-1.2.1-py3-none-any.whl", hash = "sha256:5f291567f0363a7314406be4f2381ece4e552a8608d2629544679e4d36d0df2b"},
-    {file = "pytoolconfig-1.2.1.tar.gz", hash = "sha256:5ac82f78d731531f9f82e5cc7f5ebae9473b1404c0e75aa5ac0b8b41cd99b510"},
+    {file = "pytoolconfig-1.2.2-py3-none-any.whl", hash = "sha256:825d97b052e58b609c2684b04efeb543075588d33a4916a6dc2ae39676458c7d"},
+    {file = "pytoolconfig-1.2.2.tar.gz", hash = "sha256:2512a1f261a40e73cef2e58e786184261b60c802ae7ed01249342b1949ec3aa2"},
 ]
 pytz = [
     {file = "pytz-2020.5-py2.py3-none-any.whl", hash = "sha256:16962c5fb8db4a8f63a26646d8886e9d769b6c511543557bc84e9569fb9a9cb4"},
@@ -1568,8 +1568,8 @@ requests = [
     {file = "requests-2.28.1.tar.gz", hash = "sha256:7c5599b102feddaa661c826c56ab4fee28bfd17f5abca1ebbe3e7f19d7c97983"},
 ]
 rope = [
-    {file = "rope-1.3.0-py3-none-any.whl", hash = "sha256:f0c82bd7167c2926339c6f0d9ecf7c93d6866cbe380c78639fa1bc4ac037c097"},
-    {file = "rope-1.3.0.tar.gz", hash = "sha256:4e8ede637d8f43eb83847ef9ea7edbf4ceb9d641deea592ed38a8875cde64265"},
+    {file = "rope-1.4.0-py3-none-any.whl", hash = "sha256:27c122389fa5cdffa00c24aa6c63704e0933650dbc7d4d4002537947d6cfb7b7"},
+    {file = "rope-1.4.0.tar.gz", hash = "sha256:7d5a34235ff4a242b71f249b5617a9c54112e145ba4701a41e2f4f96942e5899"},
 ]
 setuptools = [
     {file = "setuptools-65.3.0-py3-none-any.whl", hash = "sha256:2e24e0bec025f035a2e72cdd1961119f557d78ad331bb00ff82efb2ab8da8e82"},
