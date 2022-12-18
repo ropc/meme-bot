@@ -3,6 +3,7 @@ version: '3'
 services:
     meme-bot:
         build: .
+        image: ropc/meme-bot:latest
         volumes:
             - memebot:/code
         environment:
