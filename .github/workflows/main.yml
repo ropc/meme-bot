@@ -54,4 +54,4 @@ jobs:
       env:
         SSH_DESTINATION: ${{ secrets.SSH_DESTINATION }}
         REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
-      run: ssh -oStrictHostKeyChecking=no -T -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION "cd $REMOTE_DIR && git pull -f && sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull && sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up"
+      run: ssh -oStrictHostKeyChecking=no -T -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION "cd $REMOTE_DIR && git pull -f && sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull && sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
