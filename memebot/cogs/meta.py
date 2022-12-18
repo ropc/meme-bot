@@ -51,3 +51,10 @@ class Meta(commands.Cog):
             log_tail = tailer.tail(f, lines=lines + offset)[:lines]
             formatted_log_tail = '\n'.join(log_tail)[-1994:] # 2k char limit
             await context.send(f'```{formatted_log_tail}```')
+
+    @commands.command(aliases=['whois', 'who is'])
+    @commands.guild_only()
+    async def who_is(self, context: commands.Context, role: discord.Role):
+        '''Lists users with the given role'''
+        str_list = '\n'.join(f'- {member.mention}' for member in role.members)
+        await context.send(str_list, allowed_mentions=discord.AllowedMentions.none())
