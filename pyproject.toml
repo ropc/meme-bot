@@ -14,7 +14,7 @@ bot-debug = "memebot.memebot:run_debug"
 meme = "meme_generator.run:run_meme"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.10"
 "discord.py" = {extras = ["voice"], version = "^2.1.0"}
 pillow = "^9.3"
 pygtrie = "^2.5"

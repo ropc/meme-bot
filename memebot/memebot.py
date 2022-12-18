@@ -33,25 +33,26 @@ class MemeBot(commands.Bot):
         # make sure this is a Trie
         self.all_commands = CharTrie(self.all_commands)
 
-        config = get_guild_config_dict(os.getenv('MEME_BOT_GUILD_CONFIG', '{}'))
-
+    async def setup_hook(self):
         # cogs setup
         # TODO: this needs auto dependency management
+        config = get_guild_config_dict(os.getenv('MEME_BOT_GUILD_CONFIG', '{}'))
         ooc_cog = OutOfContext(self, os.getenv('OOC_CONFIG_FILE_PATH'))
-        self.add_cog(Quote())
-        self.add_cog(ooc_cog)
-        self.add_cog(ChatStats())
-        self.add_cog(RollDice(int(x) for x in os.getenv('MEME_BOT_UNLUCKY_ROLL_IDS', '').split(',') if x))
-        self.add_cog(Player(self, config))
-        self.add_cog(Meme(self))
-        self.add_cog(Beans())
-        self.add_cog(Meta(self, config, LOG_FILE))
-        self.add_cog(WolframAlpha(os.getenv('MEME_BOT_WOLFRAM_ALPHA_KEY', '')))
-        self.add_cog(TarotCard())
-        self.add_cog(Suggest(os.getenv('MEME_BOT_GITHUB_TOKEN', ''), os.getenv('MEME_BOT_SUGGESTION_GITHUB_PROJECT_COLUMN_ID', '')))
-        self.add_cog(Reminder(self, os.getenv('REMINDERS_SAVE_FILE_PATH', './reminders.pickle')))
-        self.add_cog(Hey(ooc_cog=ooc_cog))
-        self.add_cog(Whisper(whisper_config_filepath=os.getenv('WHISPER_CONFIG_FILE_PATH')))
+        await self.add_cog(Quote())
+        await self.add_cog(ooc_cog)
+        await self.add_cog(ChatStats())
+        await self.add_cog(RollDice(int(x) for x in os.getenv('MEME_BOT_UNLUCKY_ROLL_IDS', '').split(',') if x))
+        await self.add_cog(Player(self, config))
+        await self.add_cog(Meme(self))
+        await self.add_cog(Beans())
+        await self.add_cog(Meta(self, config, LOG_FILE))
+        await self.add_cog(WolframAlpha(os.getenv('MEME_BOT_WOLFRAM_ALPHA_KEY', '')))
+        await self.add_cog(TarotCard())
+        await self.add_cog(Suggest(os.getenv('MEME_BOT_GITHUB_TOKEN', ''), os.getenv('MEME_BOT_SUGGESTION_GITHUB_PROJECT_COLUMN_ID', '')))
+        # TODO: fix reminders
+        # await self.add_cog(Reminder(self, os.getenv('REMINDERS_SAVE_FILE_PATH', './reminders.pickle')))
+        await self.add_cog(Hey(ooc_cog=ooc_cog))
+        await self.add_cog(Whisper(whisper_config_filepath=os.getenv('WHISPER_CONFIG_FILE_PATH')))
 
     async def on_command(self, context: commands.Context):
         log.debug(f'received command {context.command}')
@@ -103,6 +104,7 @@ class MemeBot(commands.Bot):
 def run():
     intents = discord.Intents.default()
     intents.members = True
+    intents.message_content = True
     bot = MemeBot(command_prefix='!', intents=intents)
     bot.run(os.getenv('MEME_BOT_TOKEN'))
 

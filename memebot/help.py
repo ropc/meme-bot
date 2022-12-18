@@ -18,7 +18,7 @@ class EmbedHelpCommand(commands.HelpCommand):
     """
 
     def get_ending_note(self):
-        return 'Use {0}{1} [command] for more info on a command.'.format(self.clean_prefix, self.invoked_with)
+        return 'Use {0}{1} [command] for more info on a command.'.format(self.context.clean_prefix, self.invoked_with)
 
     def get_command_signature(self, command: commands.Command):
         return f'{command.qualified_name} {command.signature}'
@@ -36,7 +36,7 @@ class EmbedHelpCommand(commands.HelpCommand):
         all_filtered_commands.sort(key=lambda c: c.qualified_name)
 
         for command in all_filtered_commands:
-            recursive_add_command_field(embed, command, prefix=self.clean_prefix)
+            recursive_add_command_field(embed, command, prefix=self.context.clean_prefix)
 
         embed.set_footer(text=self.get_ending_note())
         await self.get_destination().send(embed=embed)
@@ -55,7 +55,7 @@ class EmbedHelpCommand(commands.HelpCommand):
     async def send_group_help(self, group: Union[commands.Command, commands.Group]):
         embed = discord.Embed()
 
-        recursive_add_command_field(embed, group, prefix=self.clean_prefix)
+        recursive_add_command_field(embed, group, prefix=self.context.clean_prefix)
 
         embed.set_footer(text=self.get_ending_note())
         await self.get_destination().send(embed=embed)
