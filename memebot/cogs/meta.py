@@ -44,7 +44,7 @@ class RoleMatch:
                 raise                      # maybe another interaction is possible?
             return cls(
                 role=matching_roles[0],
-                is_high_confindence=len(ctx.guild.roles) > 0,  # assuming role isn't missing
+                is_high_confindence=len(roles) > 0,  # assuming role isn't missing
             )
 
 

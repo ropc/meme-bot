@@ -22,11 +22,13 @@ class ChatStats(commands.Cog):
             since_date = datetime.datetime.utcnow() - datetime.timedelta(days=days) if days else None
             limit = 10_000 if days else 1_000  # more accurate if days param is given
 
-            async for message in context.history(limit=limit, after=since_date, oldest_first=False).filter(lambda m: not m.author.bot):  #type: discord.Message
+            async for message in context.history(limit=limit, after=since_date, oldest_first=False):  #type: discord.Message
+                if message.author.bot:
+                    continue
                 counts[message.author.display_name] = counts.get(message.author.display_name, 0) + 1
 
             with plt.xkcd():
-                fig, axs = plt.subplots()  # type: plt.Figure, plt.Axes
+                fig, axs = plt.subplots()
 
                 names = sorted(counts.keys(), key=lambda x: len(x))
                 values = [counts[n] for n in names]
