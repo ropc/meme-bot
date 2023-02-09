@@ -59,7 +59,7 @@ class MemberMatch:
             if not isinstance(argument, str):
                 raise
             members = list(ctx.guild.members)
-            matching_members = [member for member in members if name_equals_ignore_case(argument, member)]
+            matching_members = [member for member in members if name_equals_ignore_case(argument.strip(), member)]
             if len(matching_members) == 0:
                 raise
             if len(matching_members) > 1:  # too ambiguous
@@ -222,7 +222,7 @@ class Whisper(commands.Cog):
             set_member_personal_channel(member)
             await context.send(f'set personal channel for {member.mention} to {channel.mention}')
 
-        with context.typing():
+        async with context.typing():
             await context.send(
                 'Setting up server with the following:\n'
                 + (f'whisper channel: **#{whisper_channel.name}**\n' if whisper_channel else '')
@@ -320,7 +320,7 @@ class Whisper(commands.Cog):
             await personal_channel.send(f'you now have {count_str} whisper(s)')
             return member
 
-        with context.typing():
+        async with context.typing():
             member_configs = [member_config] if member_config else guild_config.member_configs.values()
             members = await asyncio.gather(*[set_and_notify_whisper_count(config) for config in member_configs])
             self.save_config()
