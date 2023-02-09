@@ -66,7 +66,7 @@ class MemberMatch:
                 raise                      # maybe another interaction is possible?
             return cls(
                 member=matching_members[0],
-                is_high_confindence=ctx.guild.member_count == len(members),
+                is_high_confindence=ctx.guild is not None and ctx.guild.member_count == len(members),
             )
 
 
@@ -129,9 +129,9 @@ class Whisper(commands.Cog):
             await whisper_list_channel.send(f'{sender.display_name} whispered {member_match.member.display_name}')
 
         if not member_match.is_high_confindence:
-            message = await context.reply(f'did you mean {member_match.member.mention}? (select below)')
-            await message.add_reaction('👍')
-            await message.add_reaction('👎')
+            reply_message = await context.reply(f'did you mean {member_match.member.mention}? (select below)')
+            await reply_message.add_reaction('👍')
+            await reply_message.add_reaction('👎')
 
             async def callback(reaction: discord.Reaction, user: discord.User):
                 '''assumes react is for relevant message
@@ -141,13 +141,13 @@ class Whisper(commands.Cog):
                     return False
 
                 if reaction.emoji == '👎':
-                    await message.edit(content='please try again, name should be an EXACT match')
+                    await reply_message.edit(content='please try again, name should be an EXACT match')
                     return True
 
                 await complete_whisper()
                 return True
 
-            self.callback_messages[message.id] = callback
+            self.callback_messages[reply_message.id] = callback
             return
 
         await complete_whisper()
@@ -156,6 +156,7 @@ class Whisper(commands.Cog):
 
     @commands.command(aliases=['setup whispers', 'setup whisper'])
     @commands.has_role('whisper-manager')
+    @commands.guild_only()
     async def setup_server(self, context: commands.Context, category: discord.CategoryChannel,
             role: discord.Role, whisper_count_input: int, whisper_channel: Optional[discord.TextChannel]):
         '''Setup for whispers
@@ -250,6 +251,7 @@ class Whisper(commands.Cog):
 
     @commands.command(aliases=['set player channel'])
     @commands.has_role('whisper-manager')
+    @commands.guild_only()
     async def set_personal_channel(self, context: commands.Context, member: discord.Member, channel: discord.TextChannel,
             role: discord.Role, whisper_channel: Optional[discord.TextChannel], whisper_count: Optional[int]):
         '''Set a single personal channel.
@@ -284,6 +286,7 @@ class Whisper(commands.Cog):
 
     @commands.command(aliases=['set whispers', 'set whisper count', 'swc'])
     @commands.has_role('whisper-manager')
+    @commands.guild_only()
     async def set_whisper_count(self, context: commands.Context, member: Optional[discord.Member], count: int):
         '''Set whisper count.
         Usage !set whispers <optional: single user> <count>
@@ -359,7 +362,14 @@ class Whisper(commands.Cog):
 
 
 async def get_channel(context: commands.Context, channel_id: int) -> Optional[discord.TextChannel]:
-    return context.guild.get_channel(channel_id) or await context.guild.fetch_channel(channel_id)
+    if not context.guild:
+        return None
+    guild_channel = context.guild.get_channel(channel_id) or await context.guild.fetch_channel(channel_id)
+    if not isinstance(guild_channel, discord.TextChannel):
+        return None
+    return guild_channel
 
 async def get_member(context: commands.Context, member_id: int) -> Optional[discord.Member]:
+    if not context.guild:
+        return None
     return context.guild.get_member(member_id) or await context.guild.fetch_member(member_id)
