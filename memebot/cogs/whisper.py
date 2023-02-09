@@ -56,7 +56,7 @@ class MemberMatch:
                 is_high_confindence=True,
             )
         except commands.MemberNotFound:
-            if not isinstance(argument, str):
+            if not isinstance(argument, str) or not ctx.guild:
                 raise
             members = list(ctx.guild.members)
             matching_members = [member for member in members if name_equals_ignore_case(argument.strip(), member)]
