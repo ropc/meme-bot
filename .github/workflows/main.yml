@@ -50,8 +50,15 @@ jobs:
         REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
       run: $GITHUB_WORKSPACE/.github/scripts/decrypt_secret.sh
 
-    - name: SSH into remote computer
+    - name: Pull from host and deploy
       env:
         SSH_DESTINATION: ${{ secrets.SSH_DESTINATION }}
         REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
       run: ssh -oStrictHostKeyChecking=no -T -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION "cd $REMOTE_DIR && git pull -f && sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull && sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
+
+    - name: cleanup
+      env:
+        SSH_DESTINATION: ${{ secrets.SSH_DESTINATION }}
+        REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
+      continue-on-error: true
+      run: ssh -oStrictHostKeyChecking=no -T -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION "sudo docker system prune -f"
