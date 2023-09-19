@@ -5,7 +5,7 @@ from .baseplugin import BasePlugin
 
 
 class SplitText(BasePlugin):
-    regex = re.compile(r'(?:\s*/\s*|(https?://\S+))')
+    regex: re.Pattern[str] = re.compile(r'(?:\s*/\s*|(https?://\S+))')
 
     class Config:
         arbitrary_types_allowed = True

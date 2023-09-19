@@ -25,8 +25,8 @@ class UserInput(AbstractInput):
 
 class ContextInput(AbstractInput):
     key: str
-    prefix: Optional[str]
-    suffix: Optional[str]
+    prefix: Optional[str] = None
+    suffix: Optional[str] = None
 
     def get_input(self, context: Dict) -> Optional[str]:
         text = context.get(self.key)

@@ -77,8 +77,8 @@ class OutOfContext(commands.Cog):
         await message.edit(content=f'set ooc channel as {channel.mention}. loaded {len(attachments)} attachments')
 
     async def load_attachments(self, guild_id: int, channel_id: int):
-        channel: Optional[discord.TextChannel] = self.bot.get_channel(channel_id)
-        if not channel:
+        channel = self.bot.get_channel(channel_id)
+        if not isinstance(channel, discord.TextChannel):
             return
 
         attachments = []
