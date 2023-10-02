@@ -625,13 +625,13 @@ files = [
 
 [[package]]
 name = "ipython"
-version = "8.15.0"
+version = "8.16.0"
 description = "IPython: Productive Interactive Computing"
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "ipython-8.15.0-py3-none-any.whl", hash = "sha256:45a2c3a529296870a97b7de34eda4a31bee16bc7bf954e07d39abe49caf8f887"},
-    {file = "ipython-8.15.0.tar.gz", hash = "sha256:2baeb5be6949eeebf532150f81746f8333e2ccce02de1c7eedde3f23ed5e9f1e"},
+    {file = "ipython-8.16.0-py3-none-any.whl", hash = "sha256:dba644376826a532e362da945a672865be7efda76ecf999219e6021bda85d702"},
+    {file = "ipython-8.16.0.tar.gz", hash = "sha256:7a1b2e1e6a3ec5baa466163c451335081f31859883889ff0289c6b21f7a095e2"},
 ]
 
 [package.dependencies]
@@ -2049,4 +2049,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "ae8de2bd52e7fd96cfb5c222689a5c35ecd7f88765d70934c243ecfe86663faa"
+content-hash = "32e375bc86c2e49d956b7b47fe0da94ada8eaa6296a0252156159479687ef331"
