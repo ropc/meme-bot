@@ -1,9 +1,10 @@
 import logging
 import bisect
 import datetime
+import collections
 from dataclasses import dataclass
 import math
-from typing import List, Tuple
+from typing import Deque
 from discord.ext import commands
 
 
@@ -84,14 +85,16 @@ class Calendar(commands.Cog):
 
     def __init__(self) -> None:
         super().__init__()
-        self.year_generator = iterate_years_from_zero()
-        year_info = next(self.year_generator)
-        self.years_list: List[YearSum] = [
+        self.future_year_generator = iterate_future_years_from_zero()
+        self.past_year_generator = iterate_past_years_before_zero()
+        year_info = next(self.future_year_generator)
+        self.years_list: Deque[YearSum] = collections.deque()
+        self.years_list.append(
             YearSum(
                 year_info=year_info,
                 running_sum=0,
-            ),
-        ]
+            )
+        )
         self.extend_until((datetime.datetime.now(tz=datetime.timezone.utc) - DAY_ZERO).days)
     
     @commands.command(aliases=['calendar', 'today'])
@@ -134,11 +137,17 @@ class Calendar(commands.Cog):
         )
 
     def extend_until(self, days_since_zero: int):
+        if days_since_zero > 0:
+            self._extend_future(days_since_zero)
+        else:
+            self._extend_past(days_since_zero)
+
+    def _extend_future(self, days_since_zero: int):
         if days_since_zero <= 0:
             return
         if days_since_zero <= self.years_list[-1].running_sum:
             return
-        for year_info in self.year_generator:
+        for year_info in self.future_year_generator:
             previous_entry = self.years_list[-1]
             # new_running_sum = previous_entry.running_sum + year_info.number_of_days
             new_running_sum = previous_entry.running_sum + previous_entry.year_info.number_of_days
@@ -153,6 +162,27 @@ class Calendar(commands.Cog):
                 running_sum=new_running_sum,
             ))
             if new_running_sum >= days_since_zero:
+                break
+
+    def _extend_past(self, days_since_zero: int):
+        if days_since_zero >= 0:
+            return
+        if days_since_zero >= self.years_list[0].running_sum:
+            return
+        for year_info in self.past_year_generator:
+            previous_entry = self.years_list[0]
+            new_running_sum = previous_entry.running_sum - previous_entry.year_info.number_of_days
+
+            # leap_str = ''
+            # if year_info.number_of_days != 360:
+            #     leap_str = f'. this is a leap year with {year_info.number_of_days} days!'
+            # print(f'year {year_info.year}{leap_str}. there have been {new_running_sum} days at the beginning of this year')
+
+            self.years_list.appendleft(YearSum(
+                year_info=year_info,
+                running_sum=new_running_sum,
+            ))
+            if new_running_sum <= days_since_zero:
                 break
 
     # def convert_date(date: datetime.datetime) -> datetime.date:
@@ -175,7 +205,7 @@ class Calendar(commands.Cog):
     #     month = regular_years % days_in_year
 
 
-def iterate_years_from_zero():
+def iterate_future_years_from_zero():
     year = 0
     while True:
         yield YearInfo(
@@ -190,4 +220,25 @@ def iterate_years_from_zero():
             )
 
         year += 1
+
+
+def iterate_past_years_before_zero():
+    year = -1
+    yield YearInfo(
+        year=year,
+        number_of_days=336,
+    )
+    while True:
+        if year % 64 == 0:
+            yield YearInfo(
+                year=year,
+                number_of_days=335 if year % 128 == 0 else 336
+            )
+
+        yield YearInfo(
+            year=year,
+            number_of_days=360,
+        )
+
+        year -= 1
 
