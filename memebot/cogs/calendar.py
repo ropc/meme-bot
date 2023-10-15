@@ -15,6 +15,8 @@ DAY_ZERO = datetime.datetime(1957, 10, 4, tzinfo=datetime.timezone.utc)
 DAYS_IN_128_YEARS = 46_751
 DAYS_IN_64_YEARS = 23_376
 
+DAYS_IN_MONTH = 24
+
 DISPLAY_TIMEZONES = ['US/Eastern']
 
 
@@ -26,7 +28,7 @@ class YearInfo:
 @dataclass
 class YearSum:
     year_info: YearInfo
-    running_sum: int
+    running_sum: int  # THIS IS NOT INCLUSIVE OF THE NUMBER OF DAYS IN CURRENT YEAR
 
 @dataclass
 class GPDate:
@@ -34,8 +36,11 @@ class GPDate:
     month: int
     day: int
 
+    def __str__(self) -> str:
+        pass
+
     def isoformat(self) -> str:
-        return f'{self.year:03d}-{self.month:02d}-{self.day:02d}'
+        return f'{self.year:04d}-{self.month:02d}-{self.day:02d}'
 
 
 class Calendar(commands.Cog):
@@ -47,7 +52,7 @@ class Calendar(commands.Cog):
         self.years_list: List[YearSum] = [
             YearSum(
                 year_info=year_info,
-                running_sum=year_info.number_of_days,
+                running_sum=0,
             ),
         ]
         self.extend_until((datetime.datetime.now(tz=datetime.timezone.utc) - DAY_ZERO).days)
@@ -64,16 +69,25 @@ class Calendar(commands.Cog):
 
         # now binary search
         insert_index = bisect.bisect(self.years_list, delta.days, key=lambda x: x.running_sum)
-        # this should never fail
-        year_sum = self.years_list[insert_index]
+        # good luck
+        year_sum = self.years_list[insert_index - 1]
+
+        # print('number of days since day zero', delta.days)
 
         day_in_year = delta.days - year_sum.running_sum
 
-        months = 15 if year_sum.year_info.number_of_days == 360 else 14
-        month = math.floor(day_in_year / year_sum.year_info.number_of_days) * months
+        # print('this is day', day_in_year, f'math: {delta.days} - {year_sum.running_sum}')
 
-        days_in_month = 24 if months == 15 else 30
-        day = day_in_year - (month * days_in_month)
+        months = 15 if year_sum.year_info.number_of_days == 360 else 14
+        month = math.floor(day_in_year / DAYS_IN_MONTH)
+
+        # print('month is', month, 'out of', months, 'months this year.')
+        # print(f'calculation steps math: floor({day_in_year} / {DAYS_IN_MONTH})')
+
+        day = day_in_year - (month * DAYS_IN_MONTH)
+
+        # print('day is', day)
+        # print(f'calculation for day: {day_in_year} - ({month} * {DAYS_IN_MONTH})')
 
         return GPDate(
             year=year_sum.year_info.year,
@@ -88,10 +102,20 @@ class Calendar(commands.Cog):
             return
         for year_info in self.year_generator:
             previous_entry = self.years_list[-1]
+            # new_running_sum = previous_entry.running_sum + year_info.number_of_days
+            new_running_sum = previous_entry.running_sum + previous_entry.year_info.number_of_days
+
+            # leap_str = ''
+            # if year_info.number_of_days != 360:
+            #     leap_str = f'. this is a leap year with {year_info.number_of_days} days!'
+            # print(f'year {year_info.year}{leap_str}. there have been {new_running_sum} days at the beginning of this year')
+
             self.years_list.append(YearSum(
                 year_info=year_info,
-                running_sum=previous_entry.running_sum + year_info.number_of_days,
+                running_sum=new_running_sum,
             ))
+            if new_running_sum >= days_since_zero:
+                break
 
     # def convert_date(date: datetime.datetime) -> datetime.date:
     #     delta = date - DAY_ZERO
