@@ -16,6 +16,23 @@ DAYS_IN_128_YEARS = 46_751
 DAYS_IN_64_YEARS = 23_376
 
 DAYS_IN_MONTH = 24
+MONTHS = [
+    'serpeius',
+    'pescius',
+    'ardillius',
+    'lupulius',
+    'orsius',
+    'aragnius',
+    'leonius',
+    'gattorius',
+    'pollius',
+    'cuervius',
+    'ballius',
+    'pecorius',
+    'cerdius',
+    'alceius',
+    'rattorious',
+]
 
 DISPLAY_TIMEZONES = ['US/Eastern']
 
@@ -37,7 +54,7 @@ class GPDate:
     day: int
 
     def __str__(self) -> str:
-        pass
+        return f'{self.day} {MONTHS[self.month - 1].capitalize()}, {self.year} SA ({self.isoformat()})'
 
     def isoformat(self) -> str:
         return f'{self.year:04d}-{self.month:02d}-{self.day:02d}'
