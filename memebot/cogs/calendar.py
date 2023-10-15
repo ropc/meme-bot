@@ -16,7 +16,7 @@ DAYS_IN_128_YEARS = 46_751
 DAYS_IN_64_YEARS = 23_376
 
 DAYS_IN_MONTH = 24
-MONTHS = [
+STANDARD_MONTHS = [
     'serpeius',
     'pescius',
     'ardillius',
@@ -32,6 +32,22 @@ MONTHS = [
     'cerdius',
     'alceius',
     'rattorious',
+]
+SUPPLEMENTAL_MONTHS = [
+    'orzius',
+    'bulgurius',
+    'maisius',
+    'farroius',
+    'miglius',
+    'granius',
+    'avenius',
+    'risius',
+    'segalius',
+    'sorgius',
+    'teffius',
+    'triticius',
+    'saracenius',
+    'amarantius',
 ]
 
 DISPLAY_TIMEZONES = ['US/Eastern']
@@ -52,12 +68,16 @@ class GPDate:
     year: int
     month: int
     day: int
+    year_info: YearInfo
 
     def __str__(self) -> str:
-        return f'{self.day} {MONTHS[self.month - 1].capitalize()}, {self.year} SA ({self.isoformat()})'
+        month_table = STANDARD_MONTHS if self.year_info.number_of_days == 360 else SUPPLEMENTAL_MONTHS
+        year_str = str(self.year) if self.year_info.number_of_days == 360 else f'{self.year}S'
+        return f'{self.day} {month_table[self.month - 1].capitalize()}, {year_str} SA ({self.isoformat()})'
 
     def isoformat(self) -> str:
-        return f'{self.year:04d}-{self.month:02d}-{self.day:02d}'
+        year_symbol = 'N' if self.year_info.number_of_days == 360 else 'S'
+        return f'{self.year:04d}{year_symbol}-{self.month:02d}-{self.day:02d}'
 
 
 class Calendar(commands.Cog):
@@ -110,6 +130,7 @@ class Calendar(commands.Cog):
             year=year_sum.year_info.year,
             month=month,
             day=day,
+            year_info=year_sum.year_info,
         )
 
     def extend_until(self, days_since_zero: int):
