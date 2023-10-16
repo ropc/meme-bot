@@ -114,8 +114,8 @@ class Calendar(commands.Cog):
             await ctx.send("date too far from now, i don't feel like calculating it")
             return
 
-        date = self.convert_date(date)
-        await ctx.send(date)
+        gp_date = self.convert_date(date)
+        await ctx.send(str(gp_date))
 
     def convert_date(self, date: datetime.datetime) -> GPDate:
         delta = date - DAY_ONE
