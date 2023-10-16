@@ -11,7 +11,7 @@ from discord.ext import commands
 log = logging.getLogger('memebot')
 
 # sputnik launch day
-DAY_ZERO = datetime.datetime(1957, 10, 4, tzinfo=datetime.timezone.utc)
+DAY_ONE = datetime.datetime(1957, 10, 4, tzinfo=datetime.timezone.utc)
 
 DAYS_IN_128_YEARS = 46_751
 DAYS_IN_64_YEARS = 23_376
@@ -74,11 +74,11 @@ class GPDate:
     def __str__(self) -> str:
         month_table = STANDARD_MONTHS if self.year_info.number_of_days == 360 else SUPPLEMENTAL_MONTHS
         year_str = str(self.year) if self.year_info.number_of_days == 360 else f'{self.year}S'
-        return f'{self.day + 1} {month_table[self.month].capitalize()}, {year_str} SA ({self.isoformat()})'
+        return f'{self.day} {month_table[self.month - 1].capitalize()}, {year_str} SA ({self.isoformat()})'
 
     def isoformat(self) -> str:
         year_symbol = 'N' if self.year_info.number_of_days == 360 else 'S'
-        return f'{self.year:04d}{year_symbol}-{self.month + 1:02d}-{self.day + 1:02d}'
+        return f'{self.year:04d}{year_symbol}-{self.month:02d}-{self.day:02d}'
 
 
 class Calendar(commands.Cog):
@@ -95,7 +95,7 @@ class Calendar(commands.Cog):
                 running_sum=0,
             )
         )
-        self.extend_until((datetime.datetime.now(tz=datetime.timezone.utc) - DAY_ZERO).days)
+        self.extend_until((datetime.datetime.now(tz=datetime.timezone.utc) - DAY_ONE).days)
     
     ''' Convert a date to the Gugliotta-Pacheco Concordat.
     Uses current date if no date is supplied.
@@ -108,9 +108,9 @@ class Calendar(commands.Cog):
         else:
             date = datetime.datetime.now(tz=datetime.timezone.utc)
 
-        log.info('received date', date_str, 'parsed as', date)
+        log.info(f'received date {date_str}, parsed as {date}')
 
-        if abs(date - DAY_ZERO) > datetime.timedelta(days=365 * 1e4):
+        if abs(date - DAY_ONE) > datetime.timedelta(days=365 * 1e4):
             await ctx.send("date too far from now, i don't feel like calculating it")
             return
 
@@ -118,7 +118,7 @@ class Calendar(commands.Cog):
         await ctx.send(date)
 
     def convert_date(self, date: datetime.datetime) -> GPDate:
-        delta = date - DAY_ZERO
+        delta = date - DAY_ONE
         self.extend_until(delta.days)
 
         # now binary search
@@ -126,22 +126,17 @@ class Calendar(commands.Cog):
         # good luck
         year_sum = self.years_list[insert_index - 1]
 
-        # print('number of days since day zero', delta.days)
-
+        log.debug(f'number of days since day zero: {delta.days} for {date.isoformat()}')
         day_in_year = delta.days - year_sum.running_sum
+        log.debug(f'this is day {day_in_year}. math: {delta.days} - {year_sum.running_sum}')
 
-        # print('this is day', day_in_year, f'math: {delta.days} - {year_sum.running_sum}')
+        month = math.floor(day_in_year / DAYS_IN_MONTH) + 1
+        log.debug(f'month is {month}. math: floor({day_in_year} / {DAYS_IN_MONTH})')
 
-        # months = 15 if year_sum.year_info.number_of_days == 360 else 14
-        month = math.floor(day_in_year / DAYS_IN_MONTH)
+        day = day_in_year - ((month - 1) * DAYS_IN_MONTH)
 
-        # print('month is', month, 'out of', months, 'months this year.')
-        # print(f'calculation steps math: floor({day_in_year} / {DAYS_IN_MONTH})')
-
-        day = day_in_year - (month * DAYS_IN_MONTH)
-
-        # print('day is', day)
-        # print(f'calculation for day: {day_in_year} - ({month} * {DAYS_IN_MONTH})')
+        log.debug(f'day is {day}. math: {day_in_year} - (({month} - 1) * {DAYS_IN_MONTH})')
+        log.debug(f'final values: year={year_sum.year_info.year}, month={month}, day={day}')
 
         return GPDate(
             year=year_sum.year_info.year,
@@ -211,7 +206,7 @@ def iterate_future_years_from_zero():
         if year != 0 and year % 64 == 0:
             yield YearInfo(
                 year=year,
-                number_of_days=335 if year % 128 == 0 else 336
+                number_of_days=336 if year % 128 == 0 else 335
             )
 
         year += 1
@@ -227,7 +222,7 @@ def iterate_past_years_before_zero():
         if year % 64 == 0:
             yield YearInfo(
                 year=year,
-                number_of_days=335 if year % 128 == 0 else 336
+                number_of_days=336 if year % 128 == 0 else 335
             )
 
         yield YearInfo(
