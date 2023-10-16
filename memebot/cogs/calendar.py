@@ -2,9 +2,9 @@ import logging
 import bisect
 import datetime
 import collections
-from dataclasses import dataclass
 import math
-from typing import Deque
+from dataclasses import dataclass
+from typing import Deque, Optional
 from discord.ext import commands
 
 
@@ -74,11 +74,11 @@ class GPDate:
     def __str__(self) -> str:
         month_table = STANDARD_MONTHS if self.year_info.number_of_days == 360 else SUPPLEMENTAL_MONTHS
         year_str = str(self.year) if self.year_info.number_of_days == 360 else f'{self.year}S'
-        return f'{self.day} {month_table[self.month - 1].capitalize()}, {year_str} SA ({self.isoformat()})'
+        return f'{self.day + 1} {month_table[self.month].capitalize()}, {year_str} SA ({self.isoformat()})'
 
     def isoformat(self) -> str:
         year_symbol = 'N' if self.year_info.number_of_days == 360 else 'S'
-        return f'{self.year:04d}{year_symbol}-{self.month:02d}-{self.day:02d}'
+        return f'{self.year:04d}{year_symbol}-{self.month + 1:02d}-{self.day + 1:02d}'
 
 
 class Calendar(commands.Cog):
@@ -97,13 +97,27 @@ class Calendar(commands.Cog):
         )
         self.extend_until((datetime.datetime.now(tz=datetime.timezone.utc) - DAY_ZERO).days)
     
-    @commands.command(aliases=['calendar', 'today'])
-    async def calendar(self, ctx: commands.Context):
-        now = datetime.datetime.now(tz=datetime.timezone.utc)
-        date = self.shitty_convert_date(now)
-        await ctx.send(date.isoformat())
+    ''' Convert a date to the Gugliotta-Pacheco Concordat.
+    Uses current date if no date is supplied.
+    Example: !date 2023-10-16 -> 22 Rattorious, 66 SA (0066N-00-22)
+    '''
+    @commands.command(aliases=['today', 'date'])
+    async def calendar(self, ctx: commands.Context, date_str: Optional[str]):
+        if date_str:
+            date = datetime.datetime.strptime(date_str, '%Y-%m-%d').astimezone(datetime.timezone.utc)
+        else:
+            date = datetime.datetime.now(tz=datetime.timezone.utc)
 
-    def shitty_convert_date(self, date: datetime.datetime) -> GPDate:
+        log.info('received date', date_str, 'parsed as', date)
+
+        if abs(date - DAY_ZERO) > datetime.timedelta(days=365 * 1e4):
+            await ctx.send("date too far from now, i don't feel like calculating it")
+            return
+
+        date = self.convert_date(date)
+        await ctx.send(date)
+
+    def convert_date(self, date: datetime.datetime) -> GPDate:
         delta = date - DAY_ZERO
         self.extend_until(delta.days)
 
@@ -118,7 +132,7 @@ class Calendar(commands.Cog):
 
         # print('this is day', day_in_year, f'math: {delta.days} - {year_sum.running_sum}')
 
-        months = 15 if year_sum.year_info.number_of_days == 360 else 14
+        # months = 15 if year_sum.year_info.number_of_days == 360 else 14
         month = math.floor(day_in_year / DAYS_IN_MONTH)
 
         # print('month is', month, 'out of', months, 'months this year.')
@@ -152,10 +166,10 @@ class Calendar(commands.Cog):
             # new_running_sum = previous_entry.running_sum + year_info.number_of_days
             new_running_sum = previous_entry.running_sum + previous_entry.year_info.number_of_days
 
-            # leap_str = ''
-            # if year_info.number_of_days != 360:
-            #     leap_str = f'. this is a leap year with {year_info.number_of_days} days!'
-            # print(f'year {year_info.year}{leap_str}. there have been {new_running_sum} days at the beginning of this year')
+            leap_str = ''
+            if year_info.number_of_days != 360:
+                leap_str = f'. this is a leap year with {year_info.number_of_days} days!'
+            print(f'year {year_info.year}{leap_str}. there have been {new_running_sum} days at the beginning of this year')
 
             self.years_list.append(YearSum(
                 year_info=year_info,
@@ -173,10 +187,10 @@ class Calendar(commands.Cog):
             previous_entry = self.years_list[0]
             new_running_sum = previous_entry.running_sum - previous_entry.year_info.number_of_days
 
-            # leap_str = ''
-            # if year_info.number_of_days != 360:
-            #     leap_str = f'. this is a leap year with {year_info.number_of_days} days!'
-            # print(f'year {year_info.year}{leap_str}. there have been {new_running_sum} days at the beginning of this year')
+            leap_str = ''
+            if year_info.number_of_days != 360:
+                leap_str = f'. this is a leap year with {year_info.number_of_days} days!'
+            print(f'year {year_info.year}{leap_str}. there have been {new_running_sum} days at the beginning of this year')
 
             self.years_list.appendleft(YearSum(
                 year_info=year_info,
@@ -184,25 +198,6 @@ class Calendar(commands.Cog):
             ))
             if new_running_sum <= days_since_zero:
                 break
-
-    # def convert_date(date: datetime.datetime) -> datetime.date:
-    #     delta = date - DAY_ZERO
-
-    #     delta.days / 365
-
-    #     longspans = math.floor(delta.days / DAYS_IN_128_YEARS)
-    #     shortspans = math.floor((delta.days - (longspans * DAYS_IN_128_YEARS)) / DAYS_IN_64_YEARS)
-    #     regular_years = (delta.days - (longspans * DAYS_IN_128_YEARS) - (shortspans * DAYS_IN_64_YEARS)) / 360
-
-    #     year = ((longspans * DAYS_IN_128_YEARS)
-    #         + (shortspans * DAYS_IN_64_YEARS)
-    #         + math.floor(regular_years))
-        
-    #     days_in_year = 360
-    #     if year != 0 and year % 64 == 0:
-    #         days_in_year = 335 if year % 128 == 0 else 336
-
-    #     month = regular_years % days_in_year
 
 
 def iterate_future_years_from_zero():
