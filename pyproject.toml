@@ -16,7 +16,7 @@ meme = "meme_generator.run:run_meme"
 [tool.poetry.dependencies]
 python = "^3.10"
 "discord.py" = {extras = ["voice"], version = "^2.3.2"}
-pillow = "^10.0"
+pillow = "^10.1"
 pygtrie = "^2.5"
 pydantic = "^2.4"
 youtube-dl = "^2021.12.17"
