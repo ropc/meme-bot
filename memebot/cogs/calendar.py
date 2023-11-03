@@ -96,17 +96,18 @@ class Calendar(commands.Cog):
             )
         )
         self.extend_until((datetime.datetime.now(tz=datetime.timezone.utc) - DAY_ONE).days)
-    
+
+    ''' Today's date in Gugliotta-Pacheco Concordat'''
+    @commands.command()
+    async def today(self, ctx: commands.Context):
+        return await self.date(ctx, datetime.datetime.utcnow().strftime('%Y-%m-%d'))
+
     ''' Convert a date to the Gugliotta-Pacheco Concordat.
-    Uses current date if no date is supplied.
     Example: !date 2023-10-16 -> 22 Rattorious, 66 SA (0066N-00-22)
     '''
-    @commands.command(aliases=['today', 'date'])
-    async def calendar(self, ctx: commands.Context, date_str: Optional[str]):
-        if date_str:
-            date = datetime.datetime.strptime(date_str, '%Y-%m-%d').astimezone(datetime.timezone.utc)
-        else:
-            date = datetime.datetime.now(tz=datetime.timezone.utc)
+    @commands.command()
+    async def date(self, ctx: commands.Context, date_str: str):
+        date = datetime.datetime.strptime(date_str, '%Y-%m-%d').astimezone(datetime.timezone.utc)
 
         log.info(f'received date {date_str}, parsed as {date}')
 
