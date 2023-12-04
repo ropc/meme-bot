@@ -33,7 +33,7 @@ rope = "^1.11.0"
 mypy = "^1.7"
 requests = "^2.31.0"
 pytest = "^7.4.3"
-pytest-asyncio = "^0.21.1"
+pytest-asyncio = "^0.23.2"
 jedi = "0.17.2"
 parso = "0.7.1"
 
