@@ -18,7 +18,7 @@ python = "^3.10"
 "discord.py" = {extras = ["voice"], version = "^2.3.2"}
 pillow = "^10.2"
 pygtrie = "^2.5"
-pydantic = "^2.5"
+pydantic = "^2.6"
 youtube-dl = "^2021.12.17"
 lxml = "^5.1.0"
 matplotlib = "^3.8.2"
