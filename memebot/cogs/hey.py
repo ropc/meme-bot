@@ -10,10 +10,10 @@ class Hey(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot or message.content.lower() != 'hey':
+        if message.author.bot or message.content.lower() not in {'hey', '🐴'}:
             return
 
-        await message.add_reaction('👋')
+        await message.add_reaction('👋' if message.content.lower() == 'hey' else '🐴')
 
         attachment = self.ooc_cog.get_random_ooc_attachment(message.guild.id) if message.guild else None
         if not attachment:
