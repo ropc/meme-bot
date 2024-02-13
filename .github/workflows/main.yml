@@ -34,31 +34,17 @@ jobs:
           tags: ropc/meme-bot:latest
   deploy:
     needs: docker-build-push
-    # The type of runner that the job will run on
+    if: ${{ github.actor == 'ropc' }}
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v4.1.1
-
-    # this decrypts the ssh key and stores it in $HOME/secrets/githubaction-key.pem
-    # maybe we should add a step to delete after deploying?
-    - name: Decrypt ssh key
-      env:
-        SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
-        REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
-      run: $GITHUB_WORKSPACE/.github/scripts/decrypt_secret.sh
-
-    - name: Pull from host and deploy
-      env:
-        SSH_DESTINATION: ${{ secrets.SSH_DESTINATION }}
-        REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
-      run: ssh -oStrictHostKeyChecking=no -T -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION "cd $REMOTE_DIR && git pull -f && sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull && sudo docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
-
-    - name: cleanup
-      env:
-        SSH_DESTINATION: ${{ secrets.SSH_DESTINATION }}
-        REMOTE_DIR: ${{ secrets.REMOTE_DIR }}
-      continue-on-error: true
-      run: ssh -oStrictHostKeyChecking=no -T -i $HOME/secrets/githubaction-key.pem $SSH_DESTINATION "sudo docker system prune -f"
+      - name: pull image and run updated container on remote host
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /home/ropc/code/meme-bot \
+              && git pull --rebase \
+              && docker compose -f docker-compose.yml -f docker-compose.prod.yml up --detach --pull missing \
+              && docker system prune -f
