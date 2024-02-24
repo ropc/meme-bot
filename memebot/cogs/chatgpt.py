@@ -23,6 +23,7 @@ class ChatGPT(commands.Cog):
         bot_was_mentioned = len(message.mentions) == 1 and message.mentions[0].id == self.bot_id
         if not (bot_was_mentioned or bot_was_replied):
             return
+        message_history = [m async for m in self.get_reply_history(message)]
 
         completion = self.client.chat.completions.create(
             model="gpt-3.5-turbo",
