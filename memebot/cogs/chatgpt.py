@@ -16,9 +16,13 @@ class ChatGPT(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot or len(message.mentions) != 1 or message.mentions[0].id != self.bot_id:
+        if message.author.bot:
             return
-        message_history = [m async for m in self.get_reply_history(message)]
+        replied_message = await self.get_replied_message(message)
+        bot_was_replied = replied_message and replied_message.author.id == self.bot_id
+        bot_was_mentioned = len(message.mentions) == 1 and message.mentions[0].id == self.bot_id
+        if not (bot_was_mentioned or bot_was_replied):
+            return
 
         completion = self.client.chat.completions.create(
             model="gpt-3.5-turbo",
