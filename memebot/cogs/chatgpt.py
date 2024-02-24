@@ -23,16 +23,18 @@ class ChatGPT(commands.Cog):
         bot_was_mentioned = len(message.mentions) == 1 and message.mentions[0].id == self.bot_id
         if not (bot_was_mentioned or bot_was_replied):
             return
-        message_history = [m async for m in self.get_reply_history(message)]
 
-        completion = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[self.format_chatgpt_message(m) for m in message_history]
-        )
+        async with message.channel.typing():
+            message_history = [m async for m in self.get_reply_history(message)]
 
-        log.debug("chatgpt api response: %s", completion)
-        chatgpt_response = completion.choices[0].message.content
-        await message.reply(chatgpt_response)
+            completion = self.client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[self.format_chatgpt_message(m) for m in message_history]
+            )
+
+            log.debug("chatgpt api response: %s", completion)
+            chatgpt_response = completion.choices[0].message.content
+            await message.reply(chatgpt_response)
 
     async def get_reply_history(self, message: discord.Message):
         replied_message = await self.get_replied_message(message)
@@ -51,6 +53,6 @@ class ChatGPT(commands.Cog):
 
     def format_chatgpt_message(self, message: discord.Message):
         return {
-            'role': 'system' if message.author.id == self.bot_id else 'user',
+            'role': 'assistant' if message.author.id == self.bot_id else 'user',
             'content': message.content.replace(f'<@{self.bot_id}>', 'ChatGPT'),
         }
