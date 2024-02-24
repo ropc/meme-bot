@@ -6,7 +6,7 @@ from discord.ext.commands.view import StringView
 from pygtrie import CharTrie
 from typing import Dict, Iterable, Callable, Awaitable, Optional, MutableMapping, Tuple, Mapping, List
 from .guildconfig import get_guild_config_dict
-from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme, Meta, TarotCard, WolframAlpha, Suggest, Reminder, Hey, Whisper, Calendar
+from .cogs import Quote, OutOfContext, ChatStats, RollDice, Player, Beans, Meme, Meta, TarotCard, WolframAlpha, Suggest, Reminder, Hey, Whisper, Calendar, ChatGPT
 from .cogs.meme import MemeGroup
 from .error import MemeBotError
 from .help import EmbedHelpCommand, add_single_command_field
@@ -54,6 +54,7 @@ class MemeBot(commands.Bot):
         await self.add_cog(Hey(ooc_cog=ooc_cog))
         await self.add_cog(Whisper(whisper_config_filepath=os.getenv('WHISPER_CONFIG_FILE_PATH')))
         await self.add_cog(Calendar())
+        await self.add_cog(ChatGPT(bot_id=self.user.id))
 
     async def on_command(self, context: commands.Context):
         log.debug(f'received command {context.command}')
