@@ -29,12 +29,12 @@ class ChatGPT(commands.Cog):
 
             completion = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=[self.format_chatgpt_message(m) for m in message_history]
+                messages=self.format_chatgpt_message_history(message_history)
             )
 
             log.debug("chatgpt api response: %s", completion)
             chatgpt_response = completion.choices[0].message.content
-            await message.reply(chatgpt_response)
+            await paginated_reply(message, chatgpt_response)
 
     async def get_reply_history(self, message: discord.Message):
         replied_message = await self.get_replied_message(message)
@@ -51,8 +51,29 @@ class ChatGPT(commands.Cog):
             return None
         return message.reference.resolved or await message.channel.fetch_message(message.reference.message_id)
 
+    def format_chatgpt_message_history(self, message_history: discord.Message):
+        simple_formatted_messages = [self.format_chatgpt_message(m) for m in message_history]
+        new_messages = [simple_formatted_messages.pop(0)] if len(simple_formatted_messages) > 0 else []
+        for message in simple_formatted_messages:
+            prev_message_role: str = new_messages[-1]['role']
+            prev_message_content: str = new_messages[-1]['content']
+            if (prev_message_role == 'assistant'
+                and message['role'] == 'assistant'
+                and prev_message_content.endswith('...')):
+                new_messages[-1]['content'] = prev_message_content[:-3] + message['content']
+            else:
+                new_messages.append(message)
+        return new_messages
+
     def format_chatgpt_message(self, message: discord.Message):
         return {
             'role': 'assistant' if message.author.id == self.bot_id else 'user',
             'content': message.content.replace(f'<@{self.bot_id}>', 'ChatGPT'),
         }
+
+async def paginated_reply(message: discord.Message, text: str):
+    if len(text) <= 2000:
+        return await message.reply(text)
+
+    new_message = await message.reply(text[:1997] + '...')
+    await paginated_reply(new_message, text[1997:])
