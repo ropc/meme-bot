@@ -1,43 +1,46 @@
-[tool.poetry]
+[tool.pdm]
+distribution = false
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "ipython<9.0,>=8.22",
+    "rope<2.0.0,>=1.12.0",
+    "mypy<2.0,>=1.8",
+    "requests<3.0.0,>=2.31.0",
+    "pytest<9.0.0,>=8.0.1",
+    "pytest-asyncio<1.0.0,>=0.23.5",
+    "jedi==0.17.2",
+    "parso==0.7.1",
+]
+
+[tool.pdm.build]
+includes = ["memebot", "meme_generator"]
+[project]
 name = "memebot"
 version = "0.1.0"
 description = ""
-authors = ["ropc <itslikeroar2412@gmail.com>"]
-packages = [
-    { include = "memebot" },
-    { include = "meme_generator" },
+authors = [
+    {name = "ropc", email = "1666878+ropc@users.noreply.github.com"},
 ]
+dependencies = [
+    "discord-py[voice]<3.0.0,>=2.3.2",
+    "pillow<10.0,>=9.5",
+    "pygtrie<3.0,>=2.5",
+    "pydantic<3.0,>=2.6",
+    "youtube-dl<2022.0.0,>=2021.12.17",
+    "lxml<6.0.0,>=5.1.0",
+    "matplotlib<4.0.0,>=3.8.3",
+    "ptvsd<5.0.0,>=4.3.2",
+    "tailer<1.0.0,>=0.4.1",
+    "python-dateutil<3.0.0,>=2.8.2",
+    "dateparser<2.0.0,>=1.2.0",
+    "openai<2.0.0,>=1.12.0",
+]
+requires-python = "<4.0,>=3.12"
+readme = "README.md"
+license = {text = "GPL-3.0-or-later"}
 
-[tool.poetry.scripts]
-bot = "memebot.memebot:run"
-bot-debug = "memebot.memebot:run_debug"
-meme = "meme_generator.run:run_meme"
-
-[tool.poetry.dependencies]
-python = "^3.10"
-"discord.py" = {extras = ["voice"], version = "^2.3.2"}
-pillow = "^9.5"
-pygtrie = "^2.5"
-pydantic = "^2.6"
-youtube-dl = "^2021.12.17"
-lxml = "^5.1.0"
-matplotlib = "^3.8.3"
-ptvsd = "^4.3.2"
-tailer = "^0.4.1"
-python-dateutil = "^2.8.2"
-dateparser = "^1.2.0"
-openai = "^1.12.0"
-
-[tool.poetry.dev-dependencies]
-ipython = "^8.22"
-rope = "^1.12.0"
-mypy = "^1.8"
-requests = "^2.31.0"
-pytest = "^8.0.1"
-pytest-asyncio = "^0.23.5"
-jedi = "0.17.2"
-parso = "0.7.1"
-
-[build-system]
-requires = ["poetry>=1.0.3"]
-build-backend = "poetry.masonry.api"
+[tool.pdm.scripts]
+bot = {call = "memebot.memebot:run"}
+bot-debug = {call = "memebot.memebot:run_debug"}
+meme = {call = "meme_generator.run:run_meme"}

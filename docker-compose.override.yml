@@ -4,6 +4,6 @@ services:
     meme-bot:
         env_file:
             - debug.env
-        command: [ "bot-debug" ]
+        command: [ "memebot.memebot", "run_debug" ]
         ports:
             - "5678:5678"
