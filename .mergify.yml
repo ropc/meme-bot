@@ -2,6 +2,7 @@ pull_request_rules:
   - name: Automatic merge dependecy updates
     conditions:
       - label=automerge
+      - check-success=pr-build
     actions:
       merge:
         method: squash
