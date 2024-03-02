@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.1"
-content_hash = "sha256:f987b4841dd60ddf0bc1d08b5b9095fbec96f69bb0b636bd98da6a6fa797b22f"
+content_hash = "sha256:0dc40889f1bcce79093809f0ce4b216f147c737346d78db5cb41306d41263ac9"
 
 [[package]]
 name = "aiohttp"
@@ -370,6 +370,19 @@ dependencies = [
 files = [
     {file = "discord.py-2.3.2-py3-none-any.whl", hash = "sha256:9da4679fc3cb10c64b388284700dc998663e0e57328283bbfcfc2525ec5960a6"},
     {file = "discord.py-2.3.2.tar.gz", hash = "sha256:4560f70f2eddba7e83370ecebd237ac09fbb4980dc66507482b0c0e5b8f76b9c"},
+]
+
+[[package]]
+name = "discordhealthcheck"
+version = "0.1.1"
+summary = "A small Python 3 library and command line app to automate Docker health checks for discord.py bots."
+groups = ["default"]
+dependencies = [
+    "discord-py",
+]
+files = [
+    {file = "discordhealthcheck-0.1.1-py3-none-any.whl", hash = "sha256:94f4b380dd7942a28dc99bb559ffe4b48285b4fd5cb8f3a553fe05de7c127c54"},
+    {file = "discordhealthcheck-0.1.1.tar.gz", hash = "sha256:6772cfb9ce4437773b5ce1bdfb018c2bd380ae2ead49d7f07ed789a92f79b7fc"},
 ]
 
 [[package]]

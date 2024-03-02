@@ -24,5 +24,6 @@ COPY tests ./tests
 COPY meme_generator ./meme_generator
 COPY memebot ./memebot
 
+HEALTHCHECK CMD discordhealthcheck || exit 1
 ENTRYPOINT [ "python", "-m" ]
 CMD [ "memebot.memebot", "run" ]

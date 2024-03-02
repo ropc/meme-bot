@@ -1,6 +1,7 @@
 import os
 import logging
 import discord
+import discordhealthcheck
 from discord.ext import commands
 from discord.ext.commands.view import StringView
 from pygtrie import CharTrie
@@ -55,6 +56,7 @@ class MemeBot(commands.Bot):
         await self.add_cog(Whisper(whisper_config_filepath=os.getenv('WHISPER_CONFIG_FILE_PATH')))
         await self.add_cog(Calendar())
         await self.add_cog(ChatGPT(bot_id=self.user.id))
+        self.healthcheck_server = await discordhealthcheck.start(self)
 
     async def on_command(self, context: commands.Context):
         log.debug(f'received command {context.command}')
