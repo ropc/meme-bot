@@ -3,12 +3,24 @@ import logging
 import os.path
 import random
 import discord
+from dataclasses import dataclass
 from pydantic import BaseModel
 from discord.ext import commands
 from typing import List, Dict, Optional
 
 
 log = logging.getLogger('memebot')
+
+
+@dataclass
+class MessageAttachment:
+    message_id: int
+    attachment: discord.Attachment
+
+    @staticmethod
+    def from_message(message: discord.Message):
+        for attachment in message.attachments:
+            yield MessageAttachment(message_id=message.id, attachment=attachment)
 
 
 class Config(BaseModel):
@@ -22,7 +34,7 @@ class OutOfContext(commands.Cog):
         self.bot = bot
         self.config_filepath = config_filepath
         self.config = load_config(config_filepath)
-        self.guild_attachments: Dict[int, List[discord.Attachment]] = {}
+        self.guild_attachments: Dict[int, List[MessageAttachment]] = {}
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -42,7 +54,26 @@ class OutOfContext(commands.Cog):
                 + 'maybe received message before completed loading old messages?')
             return
 
-        self.guild_attachments[message.guild.id].extend(message.attachments)
+        self.guild_attachments[message.guild.id].extend(MessageAttachment.from_message(message))
+
+    @commands.Cog.listener()
+    async def on_raw_message_delete(self, event: discord.RawMessageDeleteEvent):
+        if not event.guild_id:
+            return
+
+        guild_ooc_channel_id = self.config.guild_ooc_channel_id.get(event.guild_id)
+        if not guild_ooc_channel_id or event.channel_id != guild_ooc_channel_id:
+            return
+
+        to_delete_indexes = []
+        for (idx, message_attachment) in enumerate(self.guild_attachments[event.guild_id]):
+            if message_attachment.message_id != event.message_id:
+                continue
+            to_delete_indexes.append(idx)
+
+        # reversed iteration to prevent indexes from shifting from use of .pop()
+        for index in reversed(to_delete_indexes):
+            self.guild_attachments[event.guild_id].pop(index)
 
     @commands.command(aliases=['out of context', 'ooc'])
     @commands.guild_only()
@@ -81,19 +112,19 @@ class OutOfContext(commands.Cog):
         if not isinstance(channel, discord.TextChannel):
             return
 
-        attachments = []
+        message_attachments = []
         async for message in channel.history(limit=10_000):
-            attachments.extend(message.attachments)
+            message_attachments.extend(MessageAttachment.from_message(message))
 
-        self.guild_attachments[guild_id] = attachments
-        return attachments
+        self.guild_attachments[guild_id] = message_attachments
+        return message_attachments
 
     def get_random_ooc_attachment(self, guild_id: int) -> Optional[discord.Attachment]:
-        attachments = self.guild_attachments.get(guild_id)
-        if not attachments or len(attachments) == 0:
+        message_attachments = self.guild_attachments.get(guild_id)
+        if not message_attachments or len(message_attachments) == 0:
             return None
 
-        return random.choice(attachments)
+        return random.choice(message_attachments).attachment
 
 
 def load_config(filepath: str):
