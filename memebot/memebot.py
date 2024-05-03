@@ -55,7 +55,10 @@ class MemeBot(commands.Bot):
         await self.add_cog(Hey(ooc_cog=ooc_cog))
         await self.add_cog(Whisper(whisper_config_filepath=os.getenv('WHISPER_CONFIG_FILE_PATH')))
         await self.add_cog(Calendar())
-        await self.add_cog(ChatGPT(bot_id=self.user.id))
+        await self.add_cog(ChatGPT(
+            bot_id=self.user.id,
+            allowed_guilds=[int(x) for x in os.getenv('MEME_BOT_CHATGPT_ALLOWED_GUILDS', '').split(',')],
+        ))
         self.healthcheck_server = await discordhealthcheck.start(self)
 
     async def on_command(self, context: commands.Context):
