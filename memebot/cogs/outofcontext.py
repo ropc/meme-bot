@@ -15,12 +15,12 @@ log = logging.getLogger('memebot')
 @dataclass
 class MessageAttachment:
     message_id: int
-    attachment: discord.Attachment
+    attachment_id: int
 
     @staticmethod
     def from_message(message: discord.Message):
         for attachment in message.attachments:
-            yield MessageAttachment(message_id=message.id, attachment=attachment)
+            yield MessageAttachment(message_id=message.id, attachment_id=attachment.id)
 
 
 class Config(BaseModel):
@@ -87,7 +87,7 @@ class OutOfContext(commands.Cog):
         if not ooc_channel:
             return await context.send('Could not find out of context channel')
 
-        random_attachment = self.get_random_ooc_attachment(context.guild.id)
+        random_attachment = await self.get_random_ooc_attachment(context.guild.id)
         if not random_attachment:
             return await context.send('No images to send')
 
@@ -119,12 +119,22 @@ class OutOfContext(commands.Cog):
         self.guild_attachments[guild_id] = message_attachments
         return message_attachments
 
-    def get_random_ooc_attachment(self, guild_id: int) -> Optional[discord.Attachment]:
+    async def get_random_ooc_attachment(self, guild_id: int) -> Optional[discord.Attachment]:
         message_attachments = self.guild_attachments.get(guild_id)
         if not message_attachments or len(message_attachments) == 0:
             return None
 
-        return random.choice(message_attachments).attachment
+        guild = self.bot.get_guild(guild_id)
+        if not guild:
+            return None
+
+        ooc_channel = guild.get_channel(self.config.guild_ooc_channel_id[guild_id])
+        if not ooc_channel or not isinstance(ooc_channel, discord.TextChannel):
+            return None
+
+        message_attachment = random.choice(message_attachments)
+        message = await ooc_channel.fetch_message(message_attachment.message_id)
+        return next(attachment for attachment in message.attachments if attachment.id == message_attachment.attachment_id)
 
 
 def load_config(filepath: str):

@@ -15,7 +15,7 @@ class Hey(commands.Cog):
 
         await message.add_reaction('👋' if message.content.lower() == 'hey' else '🐴')
 
-        attachment = self.ooc_cog.get_random_ooc_attachment(message.guild.id) if message.guild else None
+        attachment = await self.ooc_cog.get_random_ooc_attachment(message.guild.id) if message.guild else None
         if not attachment:
             return
 
