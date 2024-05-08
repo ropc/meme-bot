@@ -114,6 +114,8 @@ class OutOfContext(commands.Cog):
 
         message_attachments = []
         async for message in channel.history(limit=10_000):
+            if message.author.bot:
+                continue
             message_attachments.extend(MessageAttachment.from_message(message))
 
         self.guild_attachments[guild_id] = message_attachments
