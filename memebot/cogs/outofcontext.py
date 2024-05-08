@@ -13,14 +13,14 @@ log = logging.getLogger('memebot')
 
 
 @dataclass
-class MessageAttachment:
+class OutOfContextPost:
     message_id: int
     attachment_id: int
 
     @staticmethod
     def from_message(message: discord.Message):
         for attachment in message.attachments:
-            yield MessageAttachment(message_id=message.id, attachment_id=attachment.id)
+            yield OutOfContextPost(message_id=message.id, attachment_id=attachment.id)
 
 
 class Config(BaseModel):
@@ -34,7 +34,7 @@ class OutOfContext(commands.Cog):
         self.bot = bot
         self.config_filepath = config_filepath
         self.config = load_config(config_filepath)
-        self.guild_attachments: Dict[int, List[MessageAttachment]] = {}
+        self.guild_posts: Dict[int, List[OutOfContextPost]] = {}
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -49,12 +49,12 @@ class OutOfContext(commands.Cog):
         if not guild_ooc_channel_id or message.channel.id != guild_ooc_channel_id:
             return
 
-        if message.guild.id not in self.guild_attachments.keys():
+        if message.guild.id not in self.guild_posts.keys():
             log.warning(f'could not find guild {message.guild.id} in guild_attachments dict.'
                 + 'maybe received message before completed loading old messages?')
             return
 
-        self.guild_attachments[message.guild.id].extend(MessageAttachment.from_message(message))
+        self.guild_posts[message.guild.id].extend(OutOfContextPost.from_message(message))
 
     @commands.Cog.listener()
     async def on_raw_message_delete(self, event: discord.RawMessageDeleteEvent):
@@ -66,14 +66,14 @@ class OutOfContext(commands.Cog):
             return
 
         to_delete_indexes = []
-        for (idx, message_attachment) in enumerate(self.guild_attachments[event.guild_id]):
-            if message_attachment.message_id != event.message_id:
+        for (idx, ooc_posts) in enumerate(self.guild_posts[event.guild_id]):
+            if ooc_posts.message_id != event.message_id:
                 continue
             to_delete_indexes.append(idx)
 
         # reversed iteration to prevent indexes from shifting from use of .pop()
         for index in reversed(to_delete_indexes):
-            self.guild_attachments[event.guild_id].pop(index)
+            self.guild_posts[event.guild_id].pop(index)
 
     @commands.command(aliases=['out of context', 'ooc'])
     @commands.guild_only()
@@ -112,18 +112,18 @@ class OutOfContext(commands.Cog):
         if not isinstance(channel, discord.TextChannel):
             return
 
-        message_attachments = []
+        ooc_posts = []
         async for message in channel.history(limit=10_000):
             if message.author.bot:
                 continue
-            message_attachments.extend(MessageAttachment.from_message(message))
+            ooc_posts.extend(OutOfContextPost.from_message(message))
 
-        self.guild_attachments[guild_id] = message_attachments
-        return message_attachments
+        self.guild_posts[guild_id] = ooc_posts
+        return ooc_posts
 
     async def get_random_ooc_attachment(self, guild_id: int) -> Optional[discord.Attachment]:
-        message_attachments = self.guild_attachments.get(guild_id)
-        if not message_attachments or len(message_attachments) == 0:
+        ooc_posts = self.guild_posts.get(guild_id)
+        if not ooc_posts or len(ooc_posts) == 0:
             return None
 
         guild = self.bot.get_guild(guild_id)
@@ -134,9 +134,9 @@ class OutOfContext(commands.Cog):
         if not ooc_channel or not isinstance(ooc_channel, discord.TextChannel):
             return None
 
-        message_attachment = random.choice(message_attachments)
-        message = await ooc_channel.fetch_message(message_attachment.message_id)
-        return next(attachment for attachment in message.attachments if attachment.id == message_attachment.attachment_id)
+        ooc_post = random.choice(ooc_posts)
+        message = await ooc_channel.fetch_message(ooc_post.message_id)
+        return next(attachment for attachment in message.attachments if attachment.id == ooc_post.attachment_id)
 
 
 def load_config(filepath: str):
