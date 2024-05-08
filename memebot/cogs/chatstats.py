@@ -10,10 +10,10 @@ from typing import Optional, Dict
 class ChatStats(commands.Cog):
 
     @commands.command(aliases=['chatstats', 'chat stats'])
-    async def chat_stats(self, context: commands.Context, days: Optional[int]):
+    async def chat_stats(self, context: commands.Context, days: Optional[int], input_channel: Optional[discord.TextChannel]):
         '''Display stats for this context. Optionally given # days back. Will look only look at up to 1k messages
         if no days argument given. Will look at up to 10k messages if days argument is given.
-        Example: !chatstats 10 -> chat stats for the last 10 days
+        Example: !chatstats 10 #general -> chat stats for the last 10 days in #general
         '''
 
         async with context.typing():  # at least give some level of feedback
@@ -22,7 +22,9 @@ class ChatStats(commands.Cog):
             since_date = datetime.datetime.utcnow() - datetime.timedelta(days=days) if days else None
             limit = 10_000 if days else 1_000  # more accurate if days param is given
 
-            async for message in context.history(limit=limit, after=since_date, oldest_first=False):  #type: discord.Message
+            channel = input_channel if input_channel else context.channel
+
+            async for message in channel.history(limit=limit, after=since_date, oldest_first=False):  #type: discord.Message
                 if message.author.bot:
                     continue
                 counts[message.author.display_name] = counts.get(message.author.display_name, 0) + 1
@@ -35,7 +37,7 @@ class ChatStats(commands.Cog):
 
                 axs.bar(names, values)
                 # DM channels don't have a name attribute
-                channel_name = f'#{context.channel.name}' if hasattr(context.channel, 'name') else 'this channel'
+                channel_name = f'#{channel.name}' if hasattr(channel, 'name') else 'this channel'
                 title = f'Number of messages in {channel_name}'
                 if since_date:
                     # context.history() expects timezone-naive datetime, but want to show timezone here
