@@ -1,6 +1,19 @@
+import random
 import discord
 from discord.ext import commands
 from .outofcontext import OutOfContext
+
+class HeyReactionSupplier:
+    def __iter__(self):
+        if random.randint(0, 3) > 0:
+            yield '👋'
+        else:
+            yield from ('🇰', '🇦', '🇮', '🇹', '🇽', '🇴')
+
+REACTIONS_GENERATOR_MAP = {
+    'hey': HeyReactionSupplier(),
+    '🐴': ['🐴'],
+}
 
 class Hey(commands.Cog):
 
@@ -10,10 +23,15 @@ class Hey(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.author.bot or message.content.lower() not in {'hey', '🐴'}:
+        if message.author.bot:
             return
 
-        await message.add_reaction('👋' if message.content.lower() == 'hey' else '🐴')
+        reactions = REACTIONS_GENERATOR_MAP.get(message.content.lower())
+        if not reactions:
+            return
+
+        for reaction in reactions:
+            await message.add_reaction(reaction)
 
         attachment = await self.ooc_cog.get_random_ooc_attachment(message.guild.id) if message.guild else None
         if not attachment:
