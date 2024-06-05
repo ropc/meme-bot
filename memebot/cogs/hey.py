@@ -8,7 +8,7 @@ class HeyReactionSupplier:
         if random.randint(0, 3) > 0:
             yield '👋'
         else:
-            yield from ('🇰', '🇦', '🇮', '🇹', '🇽', '🇴')
+            yield from ('🇰', '🇦', '🇮', '🇽', '🇴')
 
 REACTIONS_GENERATOR_MAP = {
     'hey': HeyReactionSupplier(),
