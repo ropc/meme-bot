@@ -1,5 +1,6 @@
 import random
 import discord
+from typing import Mapping, Iterable
 from discord.ext import commands
 from .outofcontext import OutOfContext
 
@@ -10,7 +11,7 @@ class HeyReactionSupplier:
         else:
             yield from ('🇰', '🇦', '🇮', '🇽', '🇴')
 
-REACTIONS_GENERATOR_MAP = {
+REACTIONS_GENERATOR_MAP: Mapping[str, Iterable] = {
     'hey': HeyReactionSupplier(),
     '🐴': ['🐴'],
 }
