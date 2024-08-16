@@ -31,7 +31,7 @@ class DrawText(BasePlugin):
         else:
             draw.multiline_text(position, text, align='center', font=font, fill='black')
 
-    def get_text_position(self, image: Image, draw: ImageDraw, font: ImageFont, text: str) -> Tuple[float, float]:
+    def get_text_position(self, image: Image.Image, draw: ImageDraw.ImageDraw, font: ImageFont.ImageFont, text: str) -> Tuple[float, float]:
         center = (image.size[0] / 2, image.size[1] / 2)
         position_centered_x, position_centered_y = find_centered_position(center, draw.textsize(text, font=font))
 
