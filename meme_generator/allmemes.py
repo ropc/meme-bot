@@ -188,7 +188,7 @@ ALL_MEMES = [
         plugins=[
             SplitText(plugin_input=UserInput()),
             DrawText(plugin_input=ContextInput(key='text-1'),
-                position=Coordinate(x=245, y=179), fontsize=32, maxwidth=9),
+                position=Coordinate(x=245, y=179), fontsize=32, maxwidth=11),
             DrawText(plugin_input=ContextInput(key='text-2'),
                 position=Coordinate(x=500, y=180), fontsize=34, maxwidth=10),
             DrawText(plugin_input=ContextInput(key='text-3'),
