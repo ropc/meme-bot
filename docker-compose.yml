@@ -4,6 +4,7 @@ services:
     meme-bot:
         build: .
         image: ropc/meme-bot:latest
+        container_name: meme-bot
         volumes:
             - memebot:/code
         environment:
