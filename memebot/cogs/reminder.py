@@ -174,7 +174,7 @@ class ReminderCog(commands.Cog):
 
     def load_reminders(self):
         if not os.path.isfile(self.save_file_path):
-            log.warning(f"no reminders file at '{self.save_file_path}'")
+            log.info(f"no reminders file at '{self.save_file_path}'")
             return
         with open(self.save_file_path, 'rb') as f:
             self.reminders = pickle.load(f)

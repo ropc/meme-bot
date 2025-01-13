@@ -50,8 +50,7 @@ class MemeBot(commands.Bot):
         await self.add_cog(WolframAlpha(os.getenv('MEME_BOT_WOLFRAM_ALPHA_KEY', '')))
         await self.add_cog(TarotCard())
         await self.add_cog(Suggest(os.getenv('MEME_BOT_GITHUB_TOKEN', ''), os.getenv('MEME_BOT_SUGGESTION_GITHUB_PROJECT_COLUMN_ID', '')))
-        # TODO: fix reminders
-        # await self.add_cog(Reminder(self, os.getenv('REMINDERS_SAVE_FILE_PATH', './reminders.pickle')))
+        await self.add_cog(Reminder(self, os.getenv('REMINDERS_SAVE_FILE_PATH', './reminders.pickle')))
         await self.add_cog(Hey(ooc_cog=ooc_cog))
         await self.add_cog(Whisper(whisper_config_filepath=os.getenv('WHISPER_CONFIG_FILE_PATH')))
         await self.add_cog(Calendar())
