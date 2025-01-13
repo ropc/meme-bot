@@ -155,8 +155,8 @@ class ReminderCog(commands.Cog):
         if self.timer:
             self.timer.cancel()
         delay = max(reminder.time - datetime.datetime.now(tz=dateutil.tz.tzutc()), datetime.timedelta())
-        log.debug(f'set timer for {delay.seconds}s')
-        timer = threading.Timer(delay.seconds, self.timer_callback)
+        log.debug(f'set timer for {delay.total_seconds()}s')
+        timer = threading.Timer(delay.total_seconds(), self.timer_callback)
         self.timer = timer
         timer.start()
 
