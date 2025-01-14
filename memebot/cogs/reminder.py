@@ -2,10 +2,10 @@ import asyncio
 import datetime
 import logging
 import os.path
-import re
 import threading
 import pickle
-import dateparser
+import random
+import dateparser.search
 import dateutil.tz
 import discord
 from typing import Optional, Union, List
@@ -16,19 +16,15 @@ log = logging.getLogger('memebot')
 
 
 class Reminder(BaseModel):
-    user_id: int
     time: datetime.datetime
-    message: str
     channel_id: int
-    guild_id: Optional[int]  # if none, assume DMs
+    message_id: int
 
 
 class ReminderCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot, save_file_path: str):
         self.bot = bot
-        self.regex_a = re.compile(r'(?:in|at|on)\s+(?P<time>.+)\s+(?:to|that|about|what)\s+(?P<message>.+)')
-        self.regex_b = re.compile(r'(?:to|that|about|what)\s+(?P<message>.+)\s+(?:in|at|on)\s+(?P<time>.+)')
         self.reminders: List[Reminder] = []
         self.timer: Optional[threading.Timer] = None
         self.loop = asyncio.get_event_loop()
@@ -40,45 +36,34 @@ class ReminderCog(commands.Cog):
         if len(self.reminders) > 0:
             self.set_timer(self.reminders[0])
 
-    @commands.command(aliases=['remind me'])
+    @commands.command(aliases=['remind me', 'reminder'])
     async def set_reminder(self, context: commands.Context, *, text: str):
         '''Set a reminder.
-        Usage: "remind me (in|at|on) [time] (to|that) [message]" or
-        "remind me (to|that) [message] (in|at|on) [time]"
-        **Assumes 24-hour time in EST**, but you can explicity say am/pm
-        or a different timezone
+        Usage: "!remind me <some text >
         '''
         async with context.typing():
             now = datetime.datetime.now(tz=dateutil.tz.gettz('US/Eastern'))
-            match = self.regex_a.match(text) or self.regex_b.match(text)
-            if not match:
-                return await context.send('wrong format for reminder')
 
-            match_dict = match.groupdict()
-            user = context.author
-            parser_settings = {
+            matches = dateparser.search.search_dates(text, languages=['en'], settings={
                 'PREFER_DATES_FROM': 'future',
                 'RELATIVE_BASE': now,
                 'TIMEZONE': 'US/Eastern',
                 'TO_TIMEZONE': 'UTC',
                 'RETURN_AS_TIMEZONE_AWARE': True,
-            }
-            time = dateparser.parse(match_dict['time'], settings=parser_settings)
-            message = match_dict['message']
+            })
 
-            if not user or not time or not message:
-                return await context.send('wrong format for reminder')
+            if not matches:
+                return await context.reply("can't set reminder. did not find a date in this message")
+            time = matches[0][1]
 
             if time < now:
                 delta = now - time
-                return await context.send(f"can't set reminder in the past {delta.seconds}s")
+                return await context.reply(f"can't set reminder in the past {delta.total_seconds()}s")
 
             reminder = Reminder(
-                user_id=user.id,
-                time=time,
-                message=message,
                 channel_id=context.channel.id,
-                guild_id=context.guild.id if context.guild else None
+                message_id=context.message.id,
+                time=time,
             )
 
             if len(self.reminders) == 0 or (len(self.reminders) > 0 and self.reminders[0].time > reminder.time):
@@ -123,7 +108,7 @@ class ReminderCog(commands.Cog):
 
             await context.send(f'canceled reminder {index}')
 
-    def timer_callback(self):
+    def _timer_callback(self):
         if len(self.reminders) == 0:
             log.warn('timer callback called, but no reminders available')
             return
@@ -132,19 +117,28 @@ class ReminderCog(commands.Cog):
         self.save_reminders()
 
         async def send_reminder():
-            channel, user = await asyncio.gather(
-                self.get_channel(reminder.channel_id),
-                self.get_user(reminder.user_id)
-            )
-            if not channel or not user:
-                log.error(f'missing channel [{channel}] or user[{user}] to send reminder')
-            await channel.send(f"{user.mention}: {reminder.message}")
+            channel = await self.get_channel(reminder.channel_id)
+            if not channel:
+                log.error(f'missing channel [{reminder.channel_id}] to send reminder')
+                return
+
+            message = await channel.fetch_message(reminder.message_id)
+            if not message:
+                log.error(f'missing message [{reminder.message_id}] to send reminder')
+                await channel.send('someone told me to remind them of something... but i forgot what it was')
+                return
+
+            await message.reply(random.choice([
+                'reminding you of this',
+                'you said to remind you of this',
+                '...in other news, here is your reminder',
+                'as requested, your reminder',
+            ]))
 
             now = datetime.datetime.now(tz=dateutil.tz.tzutc())
             error_in_seconds = (now - reminder.time).total_seconds()
-            log.debug(f'sent reminder {reminder} with error {error_in_seconds}s')
-            if abs(error_in_seconds) > 60:
-                log.warn(f'reminder {reminder} has error >60s: {error_in_seconds}s')
+            logger = log.warn if abs(error_in_seconds) > 60 else log.debug
+            logger(f'sent reminder {reminder} with error {error_in_seconds}s')
 
         asyncio.run_coroutine_threadsafe(send_reminder(), self.loop)
 
@@ -156,9 +150,9 @@ class ReminderCog(commands.Cog):
             self.timer.cancel()
         delay = max(reminder.time - datetime.datetime.now(tz=dateutil.tz.tzutc()), datetime.timedelta())
         log.debug(f'set timer for {delay.total_seconds()}s')
-        timer = threading.Timer(delay.total_seconds(), self.timer_callback)
-        self.timer = timer
-        timer.start()
+
+        self.timer = threading.Timer(delay.total_seconds(), self._timer_callback)
+        self.timer.start()
 
     def visible_reminders(self, context: commands.Context):
         if context.guild:
