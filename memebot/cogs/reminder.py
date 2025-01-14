@@ -8,7 +8,8 @@ import random
 import dateparser.search
 import dateutil.tz
 import discord
-from typing import Optional, Union, List
+import functools
+from typing import Optional, Union, List, Iterable
 from discord.ext import commands
 from pydantic import BaseModel
 
@@ -36,6 +37,7 @@ class ReminderCog(commands.Cog):
         if len(self.reminders) > 0:
             self.set_timer(self.reminders[0])
 
+    # TODO: allow for pinging other people
     @commands.command(aliases=['remind me', 'reminder'])
     async def set_reminder(self, context: commands.Context, *, text: str):
         '''Set a reminder.
@@ -73,40 +75,44 @@ class ReminderCog(commands.Cog):
             self.save_reminders()
             await context.reply(f"Reminder set at {format_time(reminder.time)}")
 
-    @commands.command(aliases=['reminders'])
+    @commands.command(aliases=['reminders', 'list reminders'])
     async def list_reminders(self, context: commands.Context):
         '''List existing reminders'''
         async with context.typing():
-            reminders = list(self.visible_reminders(context))
+            reminders = [r for r in self.reminders if r.channel_id == context.channel.id]
             if len(reminders) == 0:
-                message = 'No reminders'
-            else:
-                unique_user_ids = set(r.user_id for r in reminders)
-                unique_users = await asyncio.gather(*[self.get_user(user_id) for user_id in unique_user_ids])
-                unique_users_dict = {user.id: user for user in unique_users}
-                users = [unique_users_dict[r.user_id] for r in reminders]
-                message = ('Reminders:\n'
-                    + '\n'.join(format_reminder(i, user.display_name, reminder.message, reminder.time) for (i, (reminder, user)) in enumerate(zip(reminders, users))))
-            await context.send(message)
+                return await context.reply('No reminders')
 
-    @commands.command(aliases=['cancel'])
-    async def cancel_reminder(self, context: commands.Context, index: int):
-        '''Cancel a reminder. Usage: !cancel <reminder number>'''
-        async with context.typing():
-            if len(self.reminders) <= index:
-                return await context.send(f'No reminder at index {index}')
+            messages: List[discord.Message] = await _fetch_messages(
+                channel=context.channel,
+                message_ids=(r.message_id for r in reminders),
+            )
+            message_str_list = []
+            for (reminder, message) in zip(reminders, messages):
+                if not message:
+                    continue
+                message_str_list.append(f'> {message.content}\n\t- _{message.author.display_name}_ at `{format_time(reminder.time)}` ({message.jump_url})')
+            await context.send('Reminders:\n' + '\n'.join(message_str_list))
 
-            if index == 0 and self.timer:
-                self.timer.cancel()
-                self.timer = None
+    # TODO: cancel reminder interaction
+    # @commands.command(aliases=['cancel'])
+    # async def cancel_reminder(self, context: commands.Context, index: int):
+    #     '''Cancel a reminder. Usage: !cancel <reminder number>'''
+    #     async with context.typing():
+    #         if len(self.reminders) <= index:
+    #             return await context.send(f'No reminder at index {index}')
 
-            self.reminders.pop(index)
-            self.save_reminders()
+    #         if index == 0 and self.timer:
+    #             self.timer.cancel()
+    #             self.timer = None
 
-            if len(self.reminders) > 0 and index == 0:
-                self.set_timer(self.reminders[0])
+    #         self.reminders.pop(index)
+    #         self.save_reminders()
 
-            await context.send(f'canceled reminder {index}')
+    #         if len(self.reminders) > 0 and index == 0:
+    #             self.set_timer(self.reminders[0])
+
+    #         await context.send(f'canceled reminder {index}')
 
     def _timer_callback(self):
         if len(self.reminders) == 0:
@@ -154,15 +160,6 @@ class ReminderCog(commands.Cog):
         self.timer = threading.Timer(delay.total_seconds(), self._timer_callback)
         self.timer.start()
 
-    def visible_reminders(self, context: commands.Context):
-        if context.guild:
-            return (r for r in self.reminders if r.guild_id == context.guild.id)
-        else:
-            return (r for r in self.reminders if r.user_id == context.author.id)
-
-    async def get_user(self, user_id: int) -> Optional[discord.abc.User]:
-        return self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
-
     async def get_channel(self, channel_id: int) -> Optional[discord.abc.Messageable]:
         return self.bot.get_channel(channel_id) or await self.bot.fetch_channel(channel_id)
 
@@ -173,11 +170,25 @@ class ReminderCog(commands.Cog):
         with open(self.save_file_path, 'rb') as f:
             self.reminders = pickle.load(f)
         log.debug(f'loaded reminders: {self.reminders}')
+        # TODO: delete reminders that link back to deleted messages
 
     def save_reminders(self):
         with open(self.save_file_path, 'wb') as f:
             pickle.dump(self.reminders, f)
         log.debug(f'saved reminders: {self.reminders}')
+
+
+async def _fetch_messages(channel: discord.abc.Messageable, message_ids: Iterable[int]):
+    return await asyncio.gather(*[_fetch_message(channel, id) for id in message_ids])
+
+
+async def _fetch_message(channel: discord.abc.Messageable, message_id: int) -> Optional[discord.Message]:
+    try:
+        return await channel.fetch_message(message_id)
+    except discord.NotFound:
+        log.info(f'reminder message {message_id} from channel {channel} appears to have been deleted')
+        return None
+
 
 def format_time(time: datetime.datetime) -> str:
     return time.astimezone(dateutil.tz.gettz('US/Eastern')).strftime('%H:%M:%S %b %d %Y %Z')
