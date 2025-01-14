@@ -3,6 +3,7 @@ import bisect
 import datetime
 import collections
 import math
+import dateparser
 from dataclasses import dataclass
 from typing import Deque, Optional
 from discord.ext import commands
@@ -107,7 +108,13 @@ class Calendar(commands.Cog):
     '''
     @commands.command()
     async def date(self, ctx: commands.Context, date_str: str):
-        date = datetime.datetime.strptime(date_str, '%Y-%m-%d').astimezone(datetime.timezone.utc)
+        date = dateparser.parse(date_str, settings={
+            'TIMEZONE': 'UTC',
+            'RETURN_AS_TIMEZONE_AWARE': True,
+        })
+        if not date:
+            await ctx.reply(f"couldn't read this date. try YYYY-MM-DD")
+            return
 
         log.info(f'received date {date_str}, parsed as {date}')
 
