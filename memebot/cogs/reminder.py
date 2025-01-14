@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import logging
 import os.path
-import threading
 import pickle
 import random
 import dateparser.search
@@ -155,10 +154,8 @@ class ReminderCog(commands.Cog):
         if self.timer:
             self.timer.cancel()
         delay = max(reminder.time - datetime.datetime.now(tz=dateutil.tz.tzutc()), datetime.timedelta())
+        self.timer = self.loop.call_later(delay.total_seconds(), self._timer_callback)
         log.debug(f'set timer for {delay.total_seconds()}s')
-
-        self.timer = threading.Timer(delay.total_seconds(), self._timer_callback)
-        self.timer.start()
 
     async def get_channel(self, channel_id: int) -> Optional[discord.abc.Messageable]:
         return self.bot.get_channel(channel_id) or await self.bot.fetch_channel(channel_id)
