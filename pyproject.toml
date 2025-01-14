@@ -1,20 +1,13 @@
+
 [tool.pdm]
 distribution = false
-
-[tool.pdm.dev-dependencies]
-dev = [
-    "ipython<9.0,>=8.22",
-    "rope<2.0.0,>=1.12.0",
-    "mypy<2.0,>=1.8",
-    "requests<3.0.0,>=2.31.0",
-    "pytest<9.0.0,>=8.0.1",
-    "pytest-asyncio<1.0.0,>=0.23.5",
-    "jedi==0.17.2",
-    "parso==0.7.1",
-]
-
 [tool.pdm.build]
 includes = ["memebot", "meme_generator"]
+
+[tool.pdm.scripts]
+bot = {call = "memebot.memebot:run"}
+bot-debug = {call = "memebot.memebot:run_debug"}
+meme = {call = "meme_generator.run:run_meme"}
 [project]
 name = "memebot"
 version = "0.1.0"
@@ -41,7 +34,17 @@ requires-python = "<4.0,>=3.12"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
 
-[tool.pdm.scripts]
-bot = {call = "memebot.memebot:run"}
-bot-debug = {call = "memebot.memebot:run_debug"}
-meme = {call = "meme_generator.run:run_meme"}
+
+[dependency-groups]
+dev = [
+    "ipython<9.0,>=8.22",
+    "rope<2.0.0,>=1.12.0",
+    "mypy<2.0,>=1.8",
+    "requests<3.0.0,>=2.31.0",
+    "pytest<9.0.0,>=8.0.1",
+    "pytest-asyncio<1.0.0,>=0.23.5",
+    "jedi==0.17.2",
+    "parso==0.7.1",
+    "types-dateparser>=1.2.0.20240420",
+    "types-python-dateutil>=2.9.0.20241206",
+]
