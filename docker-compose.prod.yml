@@ -5,3 +5,7 @@ services:
         env_file:
             - prod.env
         restart: always
+    meme-bot-rust:
+        env_file:
+            - prod.env
+        restart: unless-stopped

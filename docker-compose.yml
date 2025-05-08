@@ -12,5 +12,12 @@ services:
             WHISPER_CONFIG_FILE_PATH: /code/whisper_config.json
             OOC_CONFIG_FILE_PATH: /code/ooc_config.json
 
+    meme-bot-rust:
+        build:
+            context: .
+            dockerfile: ./Dockerfile.rust
+        image: ropc/meme-bot-rust:latest
+        container_name: meme-bot-rust
+
 volumes:
   memebot:
