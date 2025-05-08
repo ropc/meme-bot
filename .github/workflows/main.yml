@@ -54,5 +54,5 @@ jobs:
             cd /home/ropc/code/meme-bot \
               && git pull --rebase \
               && docker compose -f docker-compose.yml -f docker-compose.prod.yml up \
-                --detach --pull always --quiet-pull --timestamps --wait \
+                --detach --pull always --timestamps --wait \
               && docker system prune -f
