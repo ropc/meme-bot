@@ -27,11 +27,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
-        name: Build and push
+        name: Build and push python app
         uses: docker/build-push-action@v5
         with:
           push: true
           tags: ropc/meme-bot:latest
+      -
+        name: Build and push rust app
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          file: ./Dockerfile.rust
+          tags: ropc/meme-bot-rust:latest
   deploy:
     needs: docker-build-push
     if: ${{ github.actor == 'ropc' }}
