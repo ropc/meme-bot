@@ -14,7 +14,8 @@ impl EventHandler for PrimesHandler {
 
         let message_has_prime = msg
             .content_safe(&ctx.cache)
-            .split_ascii_whitespace()
+            .split_whitespace()
+            .map(|word| word.trim_matches(|c: char| !c.is_alphanumeric()))
             .filter_map(|word| word.parse::<u64>().ok())
             .filter(|&num| num > 10)
             .any(|num| is_prime(&num, Option::None).probably());
