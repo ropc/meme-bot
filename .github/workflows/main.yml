@@ -51,8 +51,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /home/ropc/code/meme-bot \
-              && git pull --rebase \
-              && docker compose -f docker-compose.yml -f docker-compose.prod.yml up \
-                --detach --pull always --timestamps --wait \
+            cd /home/ropc/docker-compose \
+              && docker compose pull meme-bot meme-bot-rust \
+              && docker compose up -d meme-bot meme-bot-rust \
               && docker system prune -f
